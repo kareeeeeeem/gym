@@ -184,7 +184,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
         ],
       ),
       
-      floatingActionButton: _buildMainActionButton(),
+     // floatingActionButton: _buildMainActionButton(),
     );
   }
 
@@ -602,45 +602,45 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     );
   }
 
-  Widget _buildMainActionButton() {
-    final bool canStartWorkout = isCreator;
-    final String label = canStartWorkout ? 'بدء التمرين' : 'مشاركة صورة (قريباً)';
-    final IconData icon = canStartWorkout ? Icons.play_arrow : Icons.camera_alt;
+  // Widget _buildMainActionButton() {
+  //   final bool canStartWorkout = isCreator;
+  //   final String label = canStartWorkout ? 'بدء التمرين' : 'مشاركة صورة (قريباً)';
+  //   final IconData icon = canStartWorkout ? Icons.play_arrow : Icons.camera_alt;
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        // زر متدرج (ماروني إلى ذهبي)
-        gradient: LinearGradient(
-          colors: canStartWorkout 
-              ? [AppColors.accentColor, AppColors.primaryColor1]
-              : [AppColors.darkGrayColor.withOpacity(0.8), AppColors.darkGrayColor.withOpacity(0.5)],
-          begin: Alignment.bottomLeft,
-          end: Alignment.topRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryColor1.withOpacity(0.5),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: FloatingActionButton.extended(
-        onPressed: canStartWorkout ? _toggleWorkoutStatus : () {
-          _showAlertDialog('غير متاح حالياً', 'هذه الوظيفة قادمة قريباً. فقط مؤسس الغرفة يمكنه بدء التمرين.');
-        },
-        label: Text(
-          label, 
-          style: const TextStyle(color: AppColors.whiteColor, fontWeight: FontWeight.bold)
-        ),
-        icon: Icon(icon, color: AppColors.whiteColor),
-        backgroundColor: Colors.transparent, // مهم لظهور التدرج
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      ),
-    );
-  }
+  //   return Container(
+  //     decoration: BoxDecoration(
+  //       borderRadius: BorderRadius.circular(15),
+  //       // زر متدرج (ماروني إلى ذهبي)
+  //       gradient: LinearGradient(
+  //         colors: canStartWorkout 
+  //             ? [AppColors.accentColor, AppColors.primaryColor1]
+  //             : [AppColors.darkGrayColor.withOpacity(0.8), AppColors.darkGrayColor.withOpacity(0.5)],
+  //         begin: Alignment.bottomLeft,
+  //         end: Alignment.topRight,
+  //       ),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: AppColors.primaryColor1.withOpacity(0.5),
+  //           blurRadius: 10,
+  //           offset: const Offset(0, 4),
+  //         ),
+  //       ],
+  //     ),
+  //     child: FloatingActionButton.extended(
+  //       onPressed: canStartWorkout ? _toggleWorkoutStatus : () {
+  //         _showAlertDialog('غير متاح حالياً', 'هذه الوظيفة قادمة قريباً. فقط مؤسس الغرفة يمكنه بدء التمرين.');
+  //       },
+  //       label: Text(
+  //         label, 
+  //         style: const TextStyle(color: AppColors.whiteColor, fontWeight: FontWeight.bold)
+  //       ),
+  //       icon: Icon(icon, color: AppColors.whiteColor),
+  //       backgroundColor: Colors.transparent, // مهم لظهور التدرج
+  //       elevation: 0,
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+  //     ),
+  //   );
+  // }
   
   void _showAlertDialog(String title, String message) {
     showDialog(

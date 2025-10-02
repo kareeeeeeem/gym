@@ -1,19 +1,18 @@
+// ignore_for_file: avoid_print
+
 import 'package:fitnessapp/routes.dart';
 import 'package:fitnessapp/const/utils/app_colors.dart';
-import 'package:fitnessapp/view/camera/camera_screen.dart';
+import 'package:fitnessapp/view/dashboard/camera/camera_screen.dart';
 import 'package:fitnessapp/view/dashboard/dashboard_screen.dart';
-import 'package:fitnessapp/view/on_boarding/start_screen.dart'; 
+import 'package:fitnessapp/view/welcome/on_boarding/start_screen.dart'; 
 import 'package:flutter/material.dart';
-
 // 🚀 Firebase
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart'; 
 import 'package:cloud_firestore/cloud_firestore.dart'; 
-
 // 🔔 الإشعارات المحلية
 import 'package:flutter_local_notifications/flutter_local_notifications.dart'; 
-
 // 📸 الكاميرا
 import 'package:camera/camera.dart';
 import 'package:intl/date_symbol_data_local.dart'; 

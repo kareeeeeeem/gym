@@ -3,9 +3,9 @@ import 'package:fitnessapp/const/utils/app_colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../../const/common_widgets/round_button.dart';
-import '../../const/utils/common.dart';
-import '../workour_detail_view/widgets/icon_title_next_row.dart';
+import '../../../const/common_widgets/round_button.dart';
+import '../../../const/utils/common.dart';
+import '../widgets/icon_title_next_row.dart';
 
 class AddScheduleView extends StatefulWidget {
   final DateTime date;

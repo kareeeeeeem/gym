@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../const/utils/app_colors.dart';
+import '../../../../const/utils/app_colors.dart';
 
 class PagerWidget extends StatelessWidget {
 

@@ -2,13 +2,12 @@ import 'dart:io';
 
 import 'package:fitnessapp/const/utils/app_colors.dart';
 import 'package:fitnessapp/view/dashboard/camera/camera_screen.dart';
-import 'package:fitnessapp/view/dashboard/Room/GymRoomsScreen.dart' hide AppColors; // تم دمج hide AppColors (لا حاجة لـ hide إذا كان الاستخدام في هذا الملف لا يتعارض)
-import 'package:fitnessapp/view/dashboard/store_and_subscriptions_screen.dart' hide AppColors; // تم دمج hide AppColors
-import 'package:fitnessapp/view/dashboard/profile/user_profile.dart' hide AppColors; // تم دمج hide AppColors 
+import 'package:fitnessapp/view/dashboard/Room/GymRoomsScreen.dart' hide AppColors;
+import 'package:fitnessapp/view/dashboard/store_and_subscriptions_screen.dart' hide AppColors;
+import 'package:fitnessapp/view/dashboard/profile/user_profile.dart' hide AppColors; 
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart'; 
 
-import 'home/home_screen.dart';
 import 'package:fitnessapp/view/dashboard/activity/activity_screen.dart'; 
 
 // =========================================================================
@@ -52,7 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _widgetOptions = <Widget>[
       const GymRoomsScreen(),          // Index 0: غرف الجيم
-      StoreAndSubscriptionsScreen(), // 🟢 تم التعديل
+      const StoreAndSubscriptionsScreen(), // Index 1: المتجر والاشتراكات
       CameraScreen(cameras: widget.cameras), // Index 2: الكاميرا
       const ActivityScreen(),           // Index 3: النشاط
       const UserProfile(),              // Index 4: البروفايل
@@ -70,10 +69,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final List<Color> gymGradient = [const Color(0xFFFFA500), const Color(0xFF8B0000)]; // ذهبي وماروني
     
     return Scaffold(
-      // *** التعديل لحل مشكلة اللون الأبيض ***
-      // السماح لـ body بالتمدد خلف شريط التنقل السفلي
-      extendBody: true, 
-      
       // تغيير خلفية Scaffold إلى الأسود لتوحيد الثيم الداكن
       backgroundColor: AppColors.blackColor,
       
@@ -204,6 +199,7 @@ class TabButton extends StatelessWidget {
       required this.selectIcon,
       required this.isActive,
       required this.onTap,
+      // تم إزالة 'required pulsed' من هنا لحل الخطأ
       required this.gradient,
       required this.fallbackIcon,
   }) : super(key: key);

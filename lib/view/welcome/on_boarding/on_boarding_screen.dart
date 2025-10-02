@@ -1,7 +1,7 @@
 import 'package:fitnessapp/const/utils/app_colors.dart';
 import 'package:fitnessapp/view/dashboard/dashboard_screen.dart';
-import 'package:fitnessapp/view/home/home_screen.dart';
-import 'package:fitnessapp/view/on_boarding/widgets/pager_widget.dart';
+import 'package:fitnessapp/view/dashboard/home/home_screen.dart' hide DashboardScreen;
+import 'package:fitnessapp/view/welcome/on_boarding/widgets/pager_widget.dart';
 import 'package:fitnessapp/aus/signup/signup_screen.dart';
 import 'package:flutter/material.dart';
 

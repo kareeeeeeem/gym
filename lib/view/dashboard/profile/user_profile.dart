@@ -4,7 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; 
 import 'package:firebase_core/firebase_core.dart'; 
-import 'dart:async'; // Imported for async functions compatibility
+import 'dart:async'; 
 
 // =========================================================================
 // 1. Color Definitions (AppColors) - Unified Dark Theme
@@ -13,19 +13,18 @@ import 'dart:async'; // Imported for async functions compatibility
 class AppColors {
   static const Color whiteColor = Color(0xFFFFFFFF);
   static const Color blackColor = Color(0xFF1D1617); // Dark Background
-  static const Color darkGrayColor = Color(0xFFC0C0C0); // Lighter Gray for text on dark bg
-  static const Color primaryColor = Color(0xFF92A3FD); // Primary Blue/Lavender
-  static const Color accentColor = Color(0xFF00C4CC); // Bright Mint/Tiffany Green for highlights
-  static const Color cardBackgroundColor = Color(0xFF222222); // Dark background for dialogs & inputs
-  static const Color lightGrayColor = Color(0xFF333333); // Darker gray for subtle containers
-  static const Color redColor = Color(0xFFEA4E79); // Red for Alerts
+  static const Color darkGrayColor = Color(0xFFC0C0C0); 
+  static const Color primaryColor = Color(0xFF92A3FD); 
+  static const Color accentColor = Color(0xFF00C4CC); 
+  static const Color cardBackgroundColor = Color(0xFF222222); 
+  static const Color lightGrayColor = Color(0xFF333333); 
+  static const Color redColor = Color(0xFFEA4E79); 
   
   static const List<Color> primaryG = [
-    Color(0xFF92A3FD), // Primary Blue/Lavender
-    Color(0xFF9DCEFF), // Secondary Light Blue
+    Color(0xFF92A3FD), 
+    Color(0xFF9DCEFF), 
   ];
   
-  // 🌟 SecondaryG adjusted for dark theme compatibility (pink/purple)
   static const List<Color> secondaryG = [
     Color(0xFFC58BF2), 
     Color(0xFFEEA4CE),
@@ -35,7 +34,7 @@ class AppColors {
 }
 
 // =========================================================================
-// 2. Core Widgets Definitions (Adapted for Dark Theme)
+// 2. Core Widgets Definitions (بدون تغيير)
 // =========================================================================
 
 enum RoundButtonType { primaryBG, secondaryBG }
@@ -52,13 +51,12 @@ class RoundButton extends StatelessWidget {
     required this.title,
     required this.type,
     required this.onPressed,
-    this.height = 50, // Increased height
+    this.height = 50, 
     this.width = double.maxFinite
   });
 
   @override
   Widget build(BuildContext context) {
-    // 💡 Using MaterialButton with BoxDecoration for gradient and shadow
     return Container(
       width: width,
       height: height,
@@ -67,7 +65,7 @@ class RoundButton extends StatelessWidget {
               colors: type == RoundButtonType.primaryBG ? AppColors.primaryG : AppColors.secondaryG,
               begin: Alignment.centerLeft,
               end: Alignment.centerRight),
-          borderRadius: BorderRadius.circular(999), // Fully rounded
+          borderRadius: BorderRadius.circular(999), 
           boxShadow: [
             BoxShadow(
                 color: AppColors.primaryColor.withOpacity(0.4), 
@@ -105,18 +103,18 @@ class TitleSubtitleCell extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.cardBackgroundColor, // 🌟 Dark card background
+        color: AppColors.cardBackgroundColor, 
         borderRadius: BorderRadius.circular(12)
       ),
       child: Column(
         children: [
           Text(
             title, 
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.accentColor) // 🌟 Prominent color
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.accentColor) 
           ),
           Text(
             subtitle, 
-            style: const TextStyle(fontSize: 12, color: AppColors.darkGrayColor) // 🌟 Light secondary color
+            style: const TextStyle(fontSize: 12, color: AppColors.darkGrayColor) 
           ),
         ],
       ),
@@ -146,17 +144,17 @@ class EditInputField extends StatelessWidget {
         controller: controller,
         obscureText: isPassword,
         keyboardType: keyboardType,
-        style: const TextStyle(color: AppColors.whiteColor), // 🌟 Input text is white
+        style: const TextStyle(color: AppColors.whiteColor), 
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: AppColors.darkGrayColor), // 🌟 Label text is light gray
+          labelStyle: const TextStyle(color: AppColors.darkGrayColor), 
           border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(15)), borderSide: BorderSide.none),
           focusedBorder: const OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(15)),
-            borderSide: BorderSide(color: AppColors.accentColor, width: 2), // 🌟 Prominent border
+            borderSide: BorderSide(color: AppColors.accentColor, width: 2), 
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-          fillColor: AppColors.cardBackgroundColor, // 🌟 Field background is dark
+          fillColor: AppColors.cardBackgroundColor, 
           filled: true,
         ),
       ),
@@ -182,7 +180,7 @@ class ContentRow extends StatelessWidget {
              Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(label, style: const TextStyle(fontSize: 14, color: AppColors.darkGrayColor)), // 🌟 Label color
+                Text(label, style: const TextStyle(fontSize: 14, color: AppColors.darkGrayColor)), 
                 Flexible(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -194,7 +192,6 @@ class ContentRow extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            // 🌟 Value color is white or primary if clickable
                             color: onTap != null ? AppColors.primaryColor : AppColors.whiteColor, 
                             decoration: onTap != null ? TextDecoration.underline : TextDecoration.none,
                           ),
@@ -207,7 +204,7 @@ class ContentRow extends StatelessWidget {
                 ),
               ],
             ),
-            const Divider(color: AppColors.lightGrayColor, height: 20), // 🌟 Light gray divider
+            const Divider(color: AppColors.lightGrayColor, height: 20), 
           ],
         ),
       ),
@@ -219,7 +216,7 @@ class SettingRow extends StatelessWidget {
   final String icon;
   final String title;
   final VoidCallback? onPressed;
-  final Widget? trailing; // For integrating the Toggle switch
+  final Widget? trailing; 
 
   const SettingRow({Key? key, required this.icon, required this.title, required this.onPressed, this.trailing}) : super(key: key);
 
@@ -232,20 +229,23 @@ class SettingRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 🌟 Using a prominent placeholder icon (like the primary color icon)
-            Icon(Icons.settings, size: 20, color: AppColors.primaryColor),
+            Icon(
+              title == "Add Admins" ? Icons.security : Icons.settings, 
+              size: 20, 
+              color: AppColors.primaryColor
+            ),
             const SizedBox(width: 15),
             Expanded(
               child: Text(
                 title,
                 style: const TextStyle(
-                  color: AppColors.whiteColor, // 🌟 Text color is white
+                  color: AppColors.whiteColor, 
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            trailing ?? const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.darkGrayColor), // 🌟 Trailing icon color
+            trailing ?? const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.darkGrayColor), 
           ],
         ),
       ),
@@ -253,9 +253,8 @@ class SettingRow extends StatelessWidget {
   }
 }
 
-
 // =========================================================================
-// 3. Edit and List Screens (Adapted for Dark Theme)
+// 3. Edit and List Screens (بدون تغيير)
 // =========================================================================
 
 class PlaceholderPage extends StatelessWidget {
@@ -266,11 +265,11 @@ class PlaceholderPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.blackColor, // 🌟 Dark background
+      backgroundColor: AppColors.blackColor, 
       appBar: AppBar(
-        title: Text(title, style: const TextStyle(color: AppColors.whiteColor)), // 🌟 White title
-        backgroundColor: AppColors.blackColor, // 🌟 Dark AppBar background
-        iconTheme: const IconThemeData(color: AppColors.whiteColor), // 🌟 White icons
+        title: Text(title, style: const TextStyle(color: AppColors.whiteColor)), 
+        backgroundColor: AppColors.blackColor, 
+        iconTheme: const IconThemeData(color: AppColors.whiteColor), 
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -442,7 +441,7 @@ class AchievementView extends StatelessWidget {
         const SizedBox(height: 20),
         const Text("Badges Earned:", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.whiteColor)),
         const SizedBox(height: 10),
-        Wrap( // Using Wrap instead of Row for responsiveness
+        Wrap( 
           spacing: 10,
           children: const [
             Chip(label: Text("Beginner 💪", style: TextStyle(color: AppColors.blackColor)), backgroundColor: AppColors.accentColor),
@@ -464,7 +463,7 @@ class SettingView extends StatefulWidget {
 }
 
 class _SettingViewState extends State<SettingView> {
-  bool _darkModeEnabled = true; // 🌟 Default state for Dark Theme
+  bool _darkModeEnabled = true; 
 
   void _showInternalSnackbar(BuildContext context, String action) {
      ScaffoldMessenger.of(context).showSnackBar(
@@ -489,7 +488,6 @@ class _SettingViewState extends State<SettingView> {
           title: "Unit Preference (Kg/Lbs)", 
           onPressed: () => _showInternalSnackbar(context, "Unit Preference")
         ),
-        // 🌟 Integrating the Switch here
         SettingRow(
           icon: "assets/icons/p_theme.png", 
           title: "Dark Mode", 
@@ -507,7 +505,7 @@ class _SettingViewState extends State<SettingView> {
               });
               _showInternalSnackbar(context, "Dark Mode: ${val ? 'Enabled' : 'Disabled'}");
             },
-            activeColor: AppColors.accentColor, // Active color
+            activeColor: AppColors.accentColor, 
             inactiveThumbColor: AppColors.darkGrayColor,
             inactiveTrackColor: AppColors.cardBackgroundColor,
           ),
@@ -527,15 +525,89 @@ class _SettingViewState extends State<SettingView> {
           onPressed: () => _showInternalSnackbar(context, "Enable Biometrics")
         ),
         const SizedBox(height: 30),
-        // 📌 Linking the Logout button to the function
         RoundButton(title: "Logout", type: RoundButtonType.secondaryBG, onPressed: widget.onLogout),
       ],
     ),
   );
 }
 
-class ChangePasswordView extends StatelessWidget {
+// =========================================================================
+// 4. ChangePasswordView (بدون تغيير)
+// =========================================================================
+
+class ChangePasswordView extends StatefulWidget {
   const ChangePasswordView({super.key});
+
+  @override
+  State<ChangePasswordView> createState() => _ChangePasswordViewState();
+}
+
+class _ChangePasswordViewState extends State<ChangePasswordView> {
+  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+  
+  void _updatePassword() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ المستخدم غير مسجل الدخول أو البريد غير متوفر.')));
+      return;
+    }
+    
+    if (_newPasswordController.text.trim() != _confirmPasswordController.text.trim()) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ كلمة المرور الجديدة وتأكيدها غير متطابقتين.')));
+      return;
+    }
+
+    final String currentPassword = _currentPasswordController.text.trim();
+    final String newPassword = _newPasswordController.text.trim();
+    
+    if (newPassword.length < 6) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل.')));
+      return;
+    }
+
+
+    try {
+      // 1. إعادة المصادقة (Re-authentication) لأمان Firebase
+      AuthCredential credential = EmailAuthProvider.credential(
+        email: user.email!, 
+        password: currentPassword
+      );
+      
+      await user.reauthenticateWithCredential(credential);
+
+      // 2. تحديث كلمة المرور
+      await user.updatePassword(newPassword);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم تحديث كلمة المرور بنجاح!')));
+        Navigator.pop(context); 
+      }
+
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'حدث خطأ غير معروف.';
+      if (e.code == 'wrong-password' || e.code == 'user-not-found') {
+        errorMessage = '❌ كلمة المرور الحالية غير صحيحة.';
+      } else if (e.code == 'requires-recent-login') {
+        errorMessage = '❌ لأسباب أمنية، يجب إعادة تسجيل الدخول (تسجيل خروج ثم دخول) قبل محاولة تغيير كلمة المرور.';
+      }
+      print("Password Update Error: ${e.code}");
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
+      
+    } catch (e) {
+       print("Generic Password Update Error: $e");
+       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ فشل التحديث. تأكد من أنك متصل بالإنترنت.')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -546,17 +618,14 @@ class ChangePasswordView extends StatelessWidget {
         children: [
           const Text('Enter your new password details:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
           const SizedBox(height: 20),
-          EditInputField(label: "Current Password", controller: TextEditingController(), isPassword: true),
-          EditInputField(label: "New Password", controller: TextEditingController(), isPassword: true),
-          EditInputField(label: "Confirm New Password", controller: TextEditingController(), isPassword: true),
+          EditInputField(label: "Current Password", controller: _currentPasswordController, isPassword: true),
+          EditInputField(label: "New Password", controller: _newPasswordController, isPassword: true),
+          EditInputField(label: "Confirm New Password", controller: _confirmPasswordController, isPassword: true),
           const SizedBox(height: 30),
           RoundButton(
             title: "Update Password",
             type: RoundButtonType.primaryBG,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Updating password...')));
-              Navigator.pop(context);
-            }
+            onPressed: _updatePassword, 
           ),
         ],
       ),
@@ -564,9 +633,105 @@ class ChangePasswordView extends StatelessWidget {
   }
 }
 
-// 💡 Ego Gym Contact Details View
+// =========================================================================
+// 5. AddAdminsView (تحديث بالمنطق الحقيقي Firestore)
+// =========================================================================
+class AddAdminsView extends StatelessWidget {
+  const AddAdminsView({super.key});
+
+  // 📌 هذه الدالة هي الآن حقيقية وتُعدّل Firestore
+  void _setAdminRole(BuildContext context, String email) async {
+    final trimmedEmail = email.trim().toLowerCase();
+    if (trimmedEmail.isEmpty || !trimmedEmail.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ يرجى إدخال بريد إلكتروني صالح.')),
+      );
+      return;
+    }
+    
+    // 1. البحث عن المستخدم في Firestore بواسطة الإيميل (يتطلب index في Firestore)
+    try {
+      final QuerySnapshot result = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: trimmedEmail) // افتراض وجود حقل 'email'
+          .limit(1)
+          .get();
+
+      if (result.docs.isEmpty) {
+        if (context.mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('❌ المستخدم ($trimmedEmail) غير موجود في قاعدة البيانات.')),
+           );
+        }
+        return;
+      }
+      
+      final docId = result.docs.first.id;
+
+      // 2. تحديث وثيقة المستخدم لجعله مديراً
+      await FirebaseFirestore.instance.collection('users').doc(docId).update({
+        'isAdmin': true, // تعيين الدور
+        'adminAssignedBy': FirebaseAuth.instance.currentUser?.email ?? 'Unknown Admin', // تسجيل من قام بالتعيين
+      });
+      
+      if (context.mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('✅ تم بنجاح تعيين $trimmedEmail كمدير!')),
+         );
+      }
+
+    } on FirebaseException catch (e) {
+      print("Firestore Error setting admin: $e");
+      if (context.mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('❌ فشل تعيين المدير: ${e.message}')),
+         );
+      }
+    } catch (e) {
+      print("Generic Error setting admin: $e");
+      if (context.mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('❌ حدث خطأ غير متوقع أثناء تعيين المدير.')),
+         );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final TextEditingController emailController = TextEditingController();
+    
+    return PlaceholderPage(
+      title: "Add Admins",
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'قم بإدخال البريد الإلكتروني للمستخدم الذي تريد تعيينه كـ "مدير" (Admin). يجب أن يكون المستخدم مسجلاً بالفعل:', 
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.whiteColor)
+          ),
+          const SizedBox(height: 20),
+          EditInputField(
+            label: "User Email", 
+            controller: emailController,
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 30),
+          RoundButton(
+            title: "Grant Admin Access",
+            type: RoundButtonType.secondaryBG,
+            onPressed: () {
+              _setAdminRole(context, emailController.text);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// 6. ContactUsView (بدون تغيير)
 class ContactUsView extends StatelessWidget {
-  // 📌 Static Ego Gym Data
   static const String gymSlogan = "Get strong with us! Your journey begins now. 💪🌟";
   static const String gymWhatsApp = "+20 100 5235831";
   static const String gymPhone = "010 05235831";
@@ -595,7 +760,7 @@ class ContactUsView extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             gymSlogan,
-            style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: AppColors.accentColor), // Prominent color
+            style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: AppColors.accentColor), 
           ),
           const Divider(color: AppColors.lightGrayColor, height: 30),
           
@@ -630,7 +795,7 @@ class ContactUsView extends StatelessWidget {
 }
 
 // =========================================================================
-// 4. UserProfile Code (Updated with English Strings)
+// 7. UserProfile Code (تحديث بمنطق Firestore الحقيقي)
 // =========================================================================
 
 class UserProfile extends StatefulWidget {
@@ -641,6 +806,14 @@ class UserProfile extends StatefulWidget {
 }
 
 class _UserProfileState extends State<UserProfile> {
+  // 📌 قائمة اختبار لمدراء التطوير (يمكن حذفها بعد النشر)
+  final List<String> _developerAdmins = const [
+      "admin@example.com",     
+      "micohelmy5@gmail.com", // ✅ تم وضع بريدك هنا
+
+  ];
+  
+  bool _isAdmin = false; 
 
   bool positive = false;
   String _fullName = "Loading...";
@@ -652,12 +825,19 @@ class _UserProfileState extends State<UserProfile> {
   String _dob = "---";
   String _gender = "---";
   bool _isLoading = true;
+  
+  void _showInternalSnackbar(BuildContext context, String action) {
+     ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Setting clicked: $action')),
+     );
+  }
 
-  // 📌 1. Firebase Auth Logout function
   void _logout() async {
     try {
       await FirebaseAuth.instance.signOut();
       if (mounted) {
+        // يمكنك توجيه المستخدم لشاشة تسجيل الدخول بعد تسجيل الخروج
+        // Navigator.pushAndRemoveUntil(...) 
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Logged out successfully!")));
       }
     } catch (e) {
@@ -667,21 +847,12 @@ class _UserProfileState extends State<UserProfile> {
       }
     }
   }
+// 📌 التعديل: جلب حالة الأدمن والبيانات من Firestore بشكل أكثر دقة
 
-  // Mock function for saving FCM token
-  Future<void> _saveTokenToDatabase(String? token) async {
+// 📌 النسخة المُعدلة لتتبع الأخطاء (Debug Console)
+void _fetchUserData() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null || token == null) {
-      print("FCM Save Error: User not logged in or token is null.");
-      return;
-    }
-    // Mock Firestore save operation
-    print("FCM Token saved (Mock) for User ID: ${user.uid}");
-  }
-
-  void _fetchUserData() {
-    // 💡 Mock user data for a runnable app
-    final user = FirebaseAuth.instance.currentUser;
+    print("DEBUG 1: Starting _fetchUserData. User is: ${user != null ? 'Logged In' : 'NULL'}"); //
 
     if (user == null) {
       if (mounted) {
@@ -693,29 +864,47 @@ class _UserProfileState extends State<UserProfile> {
       }
       return;
     }
-    
-    String defaultName = user.displayName ?? user.email?.split('@')[0] ?? 'Anonymous User';
 
-    // 💡 Mock Firestore listener simulation
-    Future.delayed(const Duration(seconds: 1), () {
+    final userEmail = user.email?.toLowerCase() ?? '';
+    print("DEBUG 2: Current User Email: $userEmail"); //
+    
+    try {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      
+      String defaultName = user.displayName ?? userEmail.split('@')[0];
+      Map<String, dynamic> data = userDoc.data() ?? {};
+      
+      print("DEBUG 3: Firestore Document Exists: ${userDoc.exists}"); //
+
       if (mounted) {
         setState(() {
-          _fullName = defaultName;
-          _email = user.email ?? "Anonymous User";
-          _goal = "Build Muscle";
-          _height = "175";
-          _weight = "70";
-          _age = "30";
-          _dob = "01/01/1995";
-          _gender = "Male";
+          // ... (جلب البيانات الأخرى) ...
+          
+          // 💡 التحقق من الأدمن
+          bool isFirebaseAdmin = data['isAdmin'] as bool? ?? false; 
+          bool isDeveloperAdmin = _developerAdmins.contains(userEmail); 
+          
+          _isAdmin = isFirebaseAdmin || isDeveloperAdmin; //
+          
+          print("DEBUG 4: isFirebaseAdmin (from Firestore): $isFirebaseAdmin"); //
+          print("DEBUG 5: isDeveloperAdmin (from local list): $isDeveloperAdmin"); //
+          print("DEBUG 6: Final _isAdmin value: $_isAdmin"); //
+          
           _isLoading = false;
         });
       }
-    });
-
-    // ⚠️ In a real app, you would use:
-    // FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots().listen(...)
-  }
+      
+    } catch (e) {
+      print("ERROR FETCHING DATA: $e"); //
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _fullName = user.displayName ?? userEmail.split('@')[0];
+          _email = userEmail;
+        });
+      }
+    }
+}
 
   void _saveUserData(UserData updatedData) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -724,22 +913,31 @@ class _UserProfileState extends State<UserProfile> {
       return;
     }
     
-    // 💡 Update local state with new data
-    if (mounted) {
-        setState(() {
-            _fullName = updatedData['fullName'] ?? _fullName;
-            _goal = updatedData['goal'] ?? _goal;
-            _height = updatedData['height'] ?? _height;
-            _weight = updatedData['weight'] ?? _weight;
-            _age = updatedData['age'] ?? _age;
-            _email = updatedData['email'] ?? _email;
-            _dob = updatedData['dob'] ?? _dob;
-            _gender = updatedData['gender'] ?? _gender;
-        });
+    // 📌 تحديث Firestore (Update Firestore)
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
+        updatedData, 
+        SetOptions(merge: true) // دمج البيانات مع ما هو موجود
+      );
+      
+      // تحديث الحالة المحلية
+      if (mounted) {
+          setState(() {
+              _fullName = updatedData['fullName'] ?? _fullName;
+              _goal = updatedData['goal'] ?? _goal;
+              _height = updatedData['height'] ?? _height;
+              _weight = updatedData['weight'] ?? _weight;
+              _age = updatedData['age'] ?? _age;
+              _email = updatedData['email'] ?? _email;
+              _dob = updatedData['dob'] ?? _dob;
+              _gender = updatedData['gender'] ?? _gender;
+          });
+      }
+      print("Data saved to Firestore successfully.");
+      
+    } catch (e) {
+      print("Error saving user data: $e");
     }
-
-    // ⚠️ In a real app, data is saved here:
-    print("Mock Saving Data to Firestore: $updatedData");
   }
 
   @override
@@ -757,7 +955,6 @@ class _UserProfileState extends State<UserProfile> {
       );
     }
     
-    // 💡 Compile current user data
     final currentData = {
       'fullName': _fullName,
       'email': _email,
@@ -769,7 +966,6 @@ class _UserProfileState extends State<UserProfile> {
       'age': _age,
     };
     
-    // 🌟 Dark theme design for the Profile screen
     return Scaffold(
       backgroundColor: AppColors.blackColor,
       appBar: AppBar(
@@ -783,7 +979,7 @@ class _UserProfileState extends State<UserProfile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // User Image (Placeholder)
+            // User Image 
             CircleAvatar(
               radius: 50,
               backgroundColor: AppColors.cardBackgroundColor,
@@ -841,6 +1037,19 @@ class _UserProfileState extends State<UserProfile> {
                        Navigator.push(context, MaterialPageRoute(builder: (context) => const AchievementView()));
                     }
                   ),
+                  // زر الأدمنز يظهر إذا كان المستخدم مديراً في Firestore أو في قائمة التطوير
+                 // ...
+                  if (_isAdmin) 
+                    SettingRow(
+                      // استبدل مسار الأيقونة بـ IconData مؤقت
+                      icon: "assets/icons/p_add_user.png", // ابقِ هذا السطر إذا كنت تريد استخدامه
+                      title: "Add Admins",
+                      onPressed: () {
+                         Navigator.push(context, MaterialPageRoute(builder: (context) => const AddAdminsView()));
+                      },
+                      // 💡 التعديل: استخدم أيقونة مدمجة
+                      trailing: const Icon(Icons.security, color: AppColors.redColor), 
+                    ),
                 ],
               ),
             ),
@@ -856,152 +1065,32 @@ class _UserProfileState extends State<UserProfile> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Settings & More", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
+                  const Text("Notification & Settings", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
                   const Divider(color: AppColors.lightGrayColor, height: 20),
                   SettingRow(
-                    icon: "assets/icons/p_setting.png",
-                    title: "Settings",
+                    icon: "assets/icons/p_notification.png", 
+                    title: "Push Notifications", 
+                    onPressed: () => _showInternalSnackbar(context, "Notifications Toggle"), 
+                    trailing: Switch(value: true, onChanged: (val) { _showInternalSnackbar(context, "Notifications: ${val ? 'ON' : 'OFF'}"); }, activeColor: AppColors.accentColor),
+                  ),
+                  SettingRow(
+                    icon: "assets/icons/p_setting.png", 
+                    title: "Settings", 
                     onPressed: () {
                        Navigator.push(context, MaterialPageRoute(builder: (context) => SettingView(onLogout: _logout)));
                     }
                   ),
                   SettingRow(
-                    icon: "assets/icons/p_contact.png",
-                    title: "Contact Us (Ego Gym)",
+                    icon: "assets/icons/p_contact.png", 
+                    title: "Contact Ego Gym", 
                     onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactUsView()));
+                       Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactUsView()));
                     }
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
-            
-            // Logout button (for quick access)
-            RoundButton(
-              title: "Logout", 
-              type: RoundButtonType.secondaryBG, 
-              onPressed: _logout,
-            ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// =========================================================================
-// 5. App Initialization
-// =========================================================================
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  // ⚠️ Mock Firebase Initialization
-  // A real Firebase initialization is needed outside the canvas environment
-  // await Firebase.initializeApp(); 
-  
-  // For running and testing, we use AppWrapper with anonymous login simulation
-  runApp(const AppWrapper());
-}
-
-// 💡 Auth Wrapper Screen (Adapted for Dark Theme)
-class AppWrapper extends StatelessWidget {
-  const AppWrapper({super.key});
-
-  // Mock anonymous login attempt in initState for first run
-  void _mockLogin() async {
-    try {
-       // Mock login attempt if no user is present initially (for canvas)
-       if (FirebaseAuth.instance.currentUser == null) {
-          // Simulate anonymous sign-in to enable the UI
-           await FirebaseAuth.instance.signInAnonymously();
-       }
-    } catch (e) {
-      print("Mock Login Error: $e");
-    }
-  }
-  
-  @override
-  Widget build(BuildContext context) {
-    _mockLogin(); // Attempt anonymous login on launch
-    
-    return MaterialApp(
-      title: 'Fitness Profile',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primaryColor,
-          background: AppColors.blackColor,
-        ),
-        scaffoldBackgroundColor: AppColors.blackColor, // Unified background
-        useMaterial3: true,
-      ),
-      // StreamBuilder listens to auth state changes
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              backgroundColor: AppColors.blackColor,
-              body: Center(child: CircularProgressIndicator(color: AppColors.primaryColor))
-            );
-          }
-          if (snapshot.hasData) {
-            // User is logged in
-            return const UserProfile();
-          }
-          // User is logged out, go to mock login page
-          return const LoginPage();
-        },
-      ),
-    );
-  }
-}
-
-// 💡 Mock Login Page after Logout (Adapted for Dark Theme)
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.blackColor,
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(50.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                "Welcome Back!",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.whiteColor, // White text
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                "You have been logged out successfully. Log in to continue.",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.darkGrayColor), // Light gray text
-              ),
-              const SizedBox(height: 40),
-              RoundButton(
-                title: "Log In Anonymously (For Demo)",
-                type: RoundButtonType.primaryBG,
-                onPressed: () async {
-                  // Simulate login (anonymous sign-in)
-                  try {
-                    await FirebaseAuth.instance.signInAnonymously();
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login Error: $e")));
-                  }
-                },
-              ),
-            ],
-          ),
         ),
       ),
     );

@@ -4,17 +4,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // =========================================================================
-// 1. تعريف الألوان والبيانات
+// 1. تعريف الألوان والبيانات - تم تحديث الألوان لثيم Ego Gym
 // =========================================================================
 
 // تعريف الألوان المستخدمة (محاكاة لملف utils/app_colors.dart)
 class AppColors {
   static const Color whiteColor = Color(0xFFFFFFFF);
   static const Color blackColor = Color(0xFF1D1617);
-  static const Color grayColor = Color(0xFF7B6F72);
-  static const Color lightGrayColor = Color(0xFFF7F8F8);
-  static const Color primaryColor1 = Color(0xFF92A3FD); 
-  static const Color accentColor = Color(0xFFC58BF2);
+  // تم تحديث الألوان الرمادية لتتوافق مع ثيم الجيم
+  static const Color darkGrayColor = Color(0xFF707070); 
+  static const Color grayColor = Color(0xFFC0C0C0); 
+  static const Color lightGrayColor = Color(0xFFF1F1F1); 
+  // ألوان ثيم Ego Gym (الماروني والذهبي)
+  static const Color primaryColor1 = Color(0xFF8B0000); // ماروني داكن (لون القوة الأساسي)
+  static const Color accentColor = Color(0xFFFFA500); // ذهبي/عنبري (لون التمييز)
 }
 
 // نموذج بيانات مبسط (يستخدم في محاكاة البيانات)
@@ -95,7 +98,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_forever, color: Colors.red),
+              leading: const Icon(Icons.delete_forever, color: AppColors.primaryColor1), // تم تغيير لون أيقونة الحذف ليتماشى مع الثيم (يمكن استخدام Colors.red أيضاً)
               title: const Text('مسح جميع الإشعارات'),
               onTap: () {
                 Navigator.pop(context);
@@ -385,7 +388,7 @@ class NotificationRow extends StatelessWidget {
                       maxLines: 2, // عرض سطرين فقط
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: AppColors.grayColor.withOpacity(0.8),
+                        color: AppColors.darkGrayColor.withOpacity(0.8), // تم استخدام DarkGray
                         fontSize: 11,
                         fontWeight: FontWeight.w400,
                       ),
@@ -408,7 +411,7 @@ class NotificationRow extends StatelessWidget {
                   width: 15,
                   height: 15,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.more_vert, size: 18, color: AppColors.grayColor),
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.more_vert, size: 18, color: AppColors.darkGrayColor), // تم استخدام DarkGray
                 ))
           ],
         ),

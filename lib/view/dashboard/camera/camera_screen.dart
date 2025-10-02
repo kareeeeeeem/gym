@@ -1,10 +1,13 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:fitnessapp/const/common_widgets/round_button.dart';
 import 'package:fitnessapp/const/common_widgets/round_gradient_button.dart';
 import 'package:fitnessapp/const/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 
 // 📸 الحزم المطلوبة
-import 'package:camera/camera.dart'; 
+import 'package:camera/camera.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart'; // لحفظ الملفات المؤقتة
 import 'dart:io';
 
@@ -13,6 +16,12 @@ import 'package:permission_handler/permission_handler.dart';
 
 // 🎨 لمعالجة الصور وإضافة العلامة المائية (يجب إضافة الحزمة في pubspec.yaml)
 import 'package:image/image.dart' as img;
+import 'package:saver_gallery/saver_gallery.dart';
+import 'package:url_launcher/url_launcher.dart';
+  import 'package:permission_handler/permission_handler.dart';
+
+
+
 
 
 class CameraScreen extends StatefulWidget {
@@ -34,13 +43,38 @@ class _CameraScreenState extends State<CameraScreen> {
   bool _hasCameraPermission = false; 
 
   String? _lastCapturedImagePath; 
+  bool _isPickingOrCapturing = false; // 🟢 الجديد: لمنع أي عملية تصوير/اختيار متزامنة
 
   @override
   void initState() {
     super.initState();
     _requestPermissionAndInitializeCamera();
   }
+
+Future<bool> checkAndRequestCameraPermission() async {
+  // 1. التحقق من الحالة الحالية
+  var status = await Permission.camera.status;
+
+  // 2. إذا كانت الصلاحية ممنوحة بالفعل، عد بنجاح
+  if (status.isGranted) {
+    return true;
+  } 
+
+  // 3. إذا لم تكن ممنوحة أو لم يُطلب بها من قبل، قم بطلبها
+  if (status.isDenied || status.isLimited || status.isRestricted) {
+    var newStatus = await Permission.camera.request();
+    return newStatus.isGranted;
+  }
   
+  // 4. إذا كانت ممنوعة بشكل دائم، اطلب من المستخدم فتح الإعدادات
+  if (status.isPermanentlyDenied) {
+    // يمكنك هنا إظهار SnackBar أو AlertDialog للمستخدم
+    openAppSettings(); // دالة لفتح إعدادات التطبيق
+    return false;
+  }
+
+  return status.isGranted;
+}
   // 🔥 الدالة لطلب الإذن وتهيئة الكاميرا
   Future<void> _requestPermissionAndInitializeCamera() async {
     var status = await Permission.camera.request();
@@ -85,121 +119,182 @@ class _CameraScreenState extends State<CameraScreen> {
 
 
   // دالة التقاط الصورة وإضافة العلامة المائية
-  void _takePhotoAndSave() async {
-    if (!_isCameraReady || !_controller.value.isInitialized) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("الكاميرا غير جاهزة، يرجى الانتظار.")),
-      );
-      return;
+  // دالة التقاط الصورة وإضافة العلامة المائية
+void _takePhotoAndSave() async {
+  if (!_isCameraReady || !_controller.value.isInitialized) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("الكاميرا غير جاهزة، يرجى الانتظار.")),
+    );
+    return;
+  }
+
+  try {
+    await _initializeControllerFuture;
+
+    // 1. التقاط الصورة الفعلي
+    final XFile imageFile = await _controller.takePicture();
+
+    // 2. قراءة الملف كبايت
+    final bytes = await imageFile.readAsBytes();
+    img.Image? originalImage = img.decodeImage(bytes);
+
+    if (originalImage == null) {
+      throw Exception("فشل في فك تشفير الصورة.");
     }
 
-    try {
-      await _initializeControllerFuture;
-      
-      // 1. التقاط الصورة الفعلي
-      final XFile imageFile = await _controller.takePicture();
-      
-      // 2. قراءة الملف الملتقط كبايت (Bytes)
-      final bytes = await imageFile.readAsBytes();
-      img.Image? originalImage = img.decodeImage(bytes);
+    // 3. إضافة العلامة المائية
+    const String watermarkText = "Ego Gym";
+    final int fontSize =
+        (originalImage.height / 30).round().clamp(10, 50); // حجم الخط
 
-      if (originalImage == null) {
-        throw Exception("فشل في فك تشفير الصورة.");
-      }
+    final textWidth = fontSize * watermarkText.length;
+    final int textX = originalImage.width - textWidth - 50;
+    final int textY = originalImage.height - fontSize - 20;
 
-      // 3. إضافة العلامة المائية "Ego Gym"
-      
-      const String watermarkText = "Ego Gym";
-      final int fontSize = (originalImage.height / 30).round().clamp(10, 50); // حجم الخط
-      
-      // لتحديد موقع الخط (يجب استخدام خط مخصص لدعم اللغة العربية بشكل صحيح)
-      final textWidth = fontSize * watermarkText.length;
-      final int textX = originalImage.width - textWidth - 20; 
-      final int textY = originalImage.height - fontSize - 20; 
+    img.drawString(
+      originalImage,
+      watermarkText,
+      font: img.arial24,
+      x: textX,
+      y: textY,
+      color: img.ColorRgb8(255, 255, 255),
+    );
 
-      // رسم النص على الصورة
-      // الكود المُصحَّح: تمرير النص كـ Positional Argument ثاني، والموقع كـ Named Parameters
-img.drawString(
-  originalImage,
-  watermarkText, // ✅ تم تمرير النص كوسيط موضعي ثاني
-  font: img.arial24, 
-  x: textX,
-  y: textY,
-  color: img.ColorRgb8(255, 255, 255), 
-);
+    // 4. تشفير الصورة المعدلة
+    final encodedImageBytes = img.encodeJpg(originalImage, quality: 90);
 
-      // 4. تشفير الصورة المُعدَّلة مرة أخرى
-      final encodedImageBytes = img.encodeJpg(originalImage, quality: 90);
+    // 5. حفظ في ملف مؤقت
+    final tempDir = await getTemporaryDirectory();
+    final newPath =
+        '${tempDir.path}/EgoGym_${DateTime.now().microsecondsSinceEpoch}.jpg';
+    final File newImageFile = File(newPath);
+    await newImageFile.writeAsBytes(encodedImageBytes);
 
-      // 5. حفظ الصورة المُعدَّلة في مسار مؤقت
-      final tempDir = await getTemporaryDirectory();
-      final newPath = '${tempDir.path}/EgoGym_${DateTime.now().microsecondsSinceEpoch}.jpg';
-      final File newImageFile = File(newPath);
-      await newImageFile.writeAsBytes(encodedImageBytes);
-      
-      // 6. تحديث مسار آخر صورة ملتقطة
+    // 6. حفظ في المعرض باستخدام saver_gallery
+    final result = await SaverGallery.saveFile(
+      filePath: newPath,
+      fileName: "EgoGym_${DateTime.now().millisecondsSinceEpoch}.jpg",
+      androidRelativePath: "Pictures/EgoGym",
+      skipIfExists: false,
+    );
+
+    if (result.isSuccess) {
       setState(() {
         _lastCapturedImagePath = newImageFile.path;
       });
 
-      // 7. *** هنا تحتاج لإضافة منطق حفظ الصورة في المعرض العام ***
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ تم التقاط الصورة وإضافة علامة Ego Gym.")),
+        const SnackBar(content: Text("✅ تم حفظ الصورة بنجاح مع العلامة المائية.")),
       );
-
-    } catch (e) {
-      print("Watermark Error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ فشل التقاط الصورة أو إضافة العلامة المائية: ${e.toString()}")),
-      );
+    } else {
+      throw Exception("فشل حفظ الصورة في المعرض.");
     }
+  } catch (e) {
+    print("Watermark Error: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("❌ فشل: ${e.toString()}")),
+    );
   }
+}
+
 
   // دالة وهمية للانتقال إلى المعرض
-  void _navigateToGallery() {
-      // **ضع هنا منطق الانتقال الفعلي إلى شاشة المعرض**
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ الانتقال إلى معرض الصور...")),
-      );
+// دالة عرض آخر صورة ملتقطة (أكثر فائدة)
+void _showLastCapturedImage() {
+    if (_lastCapturedImagePath == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("لم يتم التقاط أي صورة بعد.")),
+        );
+        return;
+    }
+    
+    // عرض الصورة الملتقطة في نافذة حوار (Dialog)
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+            backgroundColor: AppColors.blackColor,
+            title: const Text("آخر صورة ملتقطة", style: TextStyle(color: AppColors.whiteColor)),
+            content: Image.file(
+                File(_lastCapturedImagePath!),
+                fit: BoxFit.contain,
+                height: MediaQuery.of(context).size.height * 0.5,
+            ),
+            actions: [
+                TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text("إغلاق", style: TextStyle(color: AppColors.secondaryColor1)),
+                ),
+            ],
+        ),
+    );
+}
+// 🔥 دالة بناء واجهة المستخدم في حالة عدم وجود إذن (يجب إضافتها داخل _CameraScreenState)
+Widget _buildPermissionDeniedWidget(Size media) {
+    return Container(
+        width: double.maxFinite,
+        height: media.height, 
+        decoration: const BoxDecoration(
+           color: AppColors.blackColor,
+        ),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(30),
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+                const Icon(Icons.camera_alt_outlined, size: 60, color: AppColors.primaryColor1), // تم تغيير اللون ليتناسب مع الثيم
+                const SizedBox(height: 20),
+                const Text(
+                    "يتطلب هذا التطبيق إذن الوصول إلى الكاميرا.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                RoundGradientButton(
+                    title: "طلب الإذن/فتح الإعدادات", 
+                    onPressed: () async {
+                       var status = await Permission.camera.status;
+                       if (status.isPermanentlyDenied) {
+                          openAppSettings(); 
+                       } else {
+                          _requestPermissionAndInitializeCamera();
+                       }
+                    },
+                )
+            ],
+        ),
+    );
+}
+// دالة وهمية للانتقال إلى المعرض (المُعدَّلة)
+void _openGallery() async {
+  if (_isPickingOrCapturing) return; // 🟢 منع التزامن
+
+  setState(() {
+    _isPickingOrCapturing = true;
+  });
+
+  try {
+    final ImagePicker picker = ImagePicker();
+    
+    // هذا الأمر يفتح المعرض للسماح للمستخدم باختيار صورة
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (image == null) {
+        print("تم فتح المعرض، لكن لم يتم اختيار صورة.");
+    } else {
+        print("تم اختيار الصورة: ${image.path}");
+        // 💡 يمكنك إضافة منطق معالجة الصورة أو العلامة المائية هنا إذا أردت معالجة صور المعرض.
+    }
+  } catch (e) {
+    print("Gallery Error: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("❌ فشل فتح المعرض: ${e.toString()}")),
+    );
+  } finally {
+    setState(() {
+      _isPickingOrCapturing = false; // 🟢 إعادة التعيين
+    });
   }
-  
-  // 🔥 دالة بناء واجهة المستخدم في حالة عدم وجود إذن
-  Widget _buildPermissionDeniedWidget(Size media) {
-      return Container(
-          width: double.maxFinite,
-          height: media.height, 
-          decoration: BoxDecoration(
-             color: AppColors.blackColor,
-          ),
-          alignment: Alignment.center,
-          padding: const EdgeInsets.all(30),
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                  const Icon(Icons.camera_alt_outlined, size: 60, color: AppColors.secondaryColor2),
-                  const SizedBox(height: 20),
-                  const Text(
-                      "يتطلب هذا التطبيق إذن الوصول إلى الكاميرا.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-                  RoundGradientButton(
-                      title: "طلب الإذن/فتح الإعدادات", 
-                      onPressed: () async {
-                         var status = await Permission.camera.status;
-                         if (status.isPermanentlyDenied) {
-                            openAppSettings(); 
-                         } else {
-                            _requestPermissionAndInitializeCamera();
-                         }
-                      },
-                  )
-              ],
-          ),
-      );
-  }
+}
 
 
   @override
@@ -218,11 +313,11 @@ img.drawString(
     
     // 💡 حالة عدم وجود كاميرات متاحة أصلاً
     if (widget.cameras.isEmpty) {
-         return Scaffold(
+         return const Scaffold(
           backgroundColor: AppColors.blackColor,
           body: Center(
               child: Padding(
-                  padding: const EdgeInsets.all(30.0),
+                  padding: EdgeInsets.all(30.0),
                   child: Text("❌ لا توجد كاميرات متاحة على هذا الجهاز.", 
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 18, color: AppColors.secondaryColor1))
@@ -312,7 +407,7 @@ img.drawString(
                   children: [
                     // 1. زر المعرض (Gallery Icon)
                     InkWell(
-                      onTap: _navigateToGallery,
+                      onTap: _openGallery,
                       child: Container(
                         width: 50,
                         height: 50,
@@ -328,6 +423,7 @@ img.drawString(
                         ),
                       ),
                     ),
+
                     
                     // 2. زر التقاط الصورة المركزي
                     InkWell(
@@ -354,12 +450,22 @@ img.drawString(
                     
                     // 3. مسافة فارغة للمحاذاة
                     const SizedBox(width: 50), 
+                    
                   ],
                 ),
               ),
             ),
         ],
-      ),
+      ), bottomNavigationBar: const BottomAppBar(
+        color: Colors.transparent, 
+        elevation: 0, // نلغي الظل
+        height:  10, // ارتفاع بسيط ليرفع الزر قليلاً
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: <Widget>[], // لا توجد عناصر فعلية
+        ),
+      ),                  
     );
   }
 }

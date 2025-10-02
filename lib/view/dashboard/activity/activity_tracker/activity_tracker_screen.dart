@@ -1,6 +1,6 @@
 import 'package:fitnessapp/const/utils/app_colors.dart';
-import 'package:fitnessapp/view/activity/activity_tracker/widgets/latest_activity_row.dart';
-import 'package:fitnessapp/view/activity/activity_tracker/widgets/today_target_cell.dart';
+import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/latest_activity_row.dart';
+import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/today_target_cell.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 

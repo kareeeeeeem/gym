@@ -3,7 +3,7 @@ import 'package:fitnessapp/const/common_widgets/round_gradient_button.dart';
 import 'package:fitnessapp/const/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 
-import '../../const/utils/common.dart';
+import '../../../const/utils/common.dart';
 import 'add_schedule_view.dart';
 
 class WorkoutScheduleView extends StatefulWidget {

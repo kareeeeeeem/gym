@@ -1,4 +1,5 @@
 import 'package:fitnessapp/view/dashboard/Room/RoomDetailsScreen.dart';
+import 'package:fitnessapp/view/dashboard/home/notification/notification_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -426,6 +427,26 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
         backgroundColor: AppColors.blackColor,
         elevation: 0.5,
         iconTheme: const IconThemeData(color: AppColors.whiteColor),
+
+
+
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.notifications_none, // أيقونة إشعارات جميلة
+              color: AppColors.accentColor, // يمكنك استخدام اللون الذهبي لتمييزها
+              size: 28,
+            ),
+            onPressed: () {
+              // مسار الانتقال (Path Page)
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotificationScreen()),
+              );
+            },
+          ),
+          const SizedBox(width: 8), // مسافة بسيطة من الحافة
+        ],
       ),
       body: Column(
         children: [
@@ -495,6 +516,7 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
         ],
       ),
       // Floating Action Button to create a new room
+      
       floatingActionButton: FloatingActionButton.extended(
         onPressed: currentUserId.isEmpty ? () => _showAlertDialog('Login Required', 'You must log in first to create a room.') : _showCreateRoomModal,
         label: const Text('Create Room', style: TextStyle(color: AppColors.whiteColor, fontWeight: FontWeight.bold)),
@@ -502,6 +524,18 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
         backgroundColor: AppColors.primaryColor1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat, 
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.transparent, 
+        elevation: 0, // نلغي الظل
+        height:  10, // ارتفاع بسيط ليرفع الزر قليلاً
+        child: const Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: <Widget>[], // لا توجد عناصر فعلية
+        ),
+      ),
+
     );
   }
 

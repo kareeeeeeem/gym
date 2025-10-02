@@ -2,26 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 
+// ⚠️ استبدل هذا باستدعاء دالة التحقق من صلاحية المدير الفعلية في مشروعك.
+// هذه مجرد دالة وهمية للمحاكاة.
+// *************************************************************************
+Future<bool> _fetchAdminStatusFromFirestore() async {
+  // 💡 يجب أن تستبدل هذا بالمنطق الذي يحقق من حقل 'isAdmin' في وثيقة المستخدم الحالية.
+  // مثال:
+  // final user = FirebaseAuth.instance.currentUser;
+  // if (user != null) {
+  //   final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+  //   return userDoc.data()?['isAdmin'] ?? false;
+  // }
+  // return false;
+
+  await Future.delayed(const Duration(milliseconds: 500)); 
+  return true; // استخدم True للاختبار بوضع المدير، ثم عدلها إلى المنطق الفعلي
+}
+// *************************************************************************
+
 // =========================================================================
 // 1. تعريف الألوان والنماذج (Ego Gym Theme - Deep Red/Maroon & Electric Gold)
 // =========================================================================
 
 class AppColors {
-  // ألوان Ego Gym التي تم استخدامها سابقاً
   static const Color whiteColor = Color(0xFFFFFFFF);
-  static const Color blackColor = Color(0xFF1D1617); // Dark Background
-  static const Color darkGrayColor = Color(0xFFC0C0C0); // Lighter Gray for text on dark bg
+  static const Color blackColor = Color(0xFF1D1617);
+  static const Color darkGrayColor = Color(0xFFC0C0C0);
   static const Color primaryColor1 = Color(0xFF8B0000); // Dark Maroon/Deep Red
   static const Color accentColor = Color(0xFFFFA500); // Electric Gold/Amber
-  static const Color cardBackgroundColor = Color(0xFF222222); // Dark background for cards
-  // الألوان الإضافية
-  static const Color lightGrayColor = Color(0xFF333333); // Darker gray for subtle backgrounds
-  static const Color grayColor = Color(0xFF7B6F72); // Mid-tone gray
-  static const Color greenColor = Color(0xFF4DD17E); // Green for success/checkmarks (contrast)
-  static const Color redColor = Color(0xFFEA4E79); // Red for discounts/alerts (contrast)
+  static const Color cardBackgroundColor = Color(0xFF222222);
+  static const Color lightGrayColor = Color(0xFF333333);
+  static const Color grayColor = Color(0xFF7B6F72);
+  static const Color greenColor = Color(0xFF4DD17E);
+  static const Color redColor = Color(0xFFEA4E79);
 }
 
-// دالة مساعدة لضمان تحويل القيمة إلى double بأمان
 double _safeToDouble(dynamic value) {
   if (value == null) return 0.0;
   if (value is num) return value.toDouble();
@@ -29,7 +44,6 @@ double _safeToDouble(dynamic value) {
   return 0.0;
 }
 
-// نموذج بيانات للاشتراكات (بدون تغيير)
 class SubscriptionModel {
   final String title;
   final String description;
@@ -51,7 +65,6 @@ class SubscriptionModel {
   
   factory SubscriptionModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
     return SubscriptionModel(
       id: doc.id,
       title: data['title'] ?? 'بدون عنوان',
@@ -59,9 +72,7 @@ class SubscriptionModel {
       price: _safeToDouble(data['price']), 
       discountedPrice: _safeToDouble(data['discountedPrice']), 
       duration: data['duration'] ?? 'N/A',
-      features: List<String>.from((data['features'] is List) 
-          ? data['features'].where((e) => e is String).toList() 
-          : []),
+      features: List<String>.from((data['features'] is List) ? data['features'].where((e) => e is String).toList() : []),
     );
   }
   
@@ -80,7 +91,6 @@ class SubscriptionModel {
   String get discountText => hasDiscount ? "${((1 - (discountedPrice / price)) * 100).round()}% خصم" : '';
 }
 
-// نموذج بيانات للمنتجات (بدون تغيير)
 class ProductModel {
   final String name;
   final String description;
@@ -102,7 +112,6 @@ class ProductModel {
 
   factory ProductModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
     return ProductModel(
       id: doc.id,
       name: data['name'] ?? 'منتج غير معرف',
@@ -129,13 +138,12 @@ class ProductModel {
 }
 
 // =========================================================================
-// 2. دوال Firestore (CRUD Operations) (بدون تغيير)
+// 2. دوال Firestore (CRUD Operations)
 // =========================================================================
 
 final FirebaseFirestore _db = FirebaseFirestore.instance;
 
 String get _appId {
-  // القيمة الافتراضية المستخدمة في Firebase Console هي: default-app-id
   return (const String.fromEnvironment('app_id', defaultValue: 'default-app-id')); 
 }
 
@@ -147,7 +155,6 @@ CollectionReference _getPublicDataCollection(String collectionName) {
             .collection(collectionName);
 }
 
-// دوال القراءة (Streams)
 Stream<List<SubscriptionModel>> _fetchSubscriptions() {
   return _getPublicDataCollection('subscriptions')
             .snapshots()
@@ -164,46 +171,65 @@ Stream<List<ProductModel>> _fetchProducts() {
                 .toList());
 }
 
-// دوال الإدارة (تستخدم فقط في وضع الإدارة)
 Future<void> addSubscription(SubscriptionModel sub) async {
   try {
     await _getPublicDataCollection('subscriptions').add(sub.toFirestore());
-    print("✅ Subscription added: ${sub.title}");
   } catch (error) { print("❌ Error adding subscription: $error"); }
 }
 
 Future<void> deleteSubscription(String id) async {
   try {
     await _getPublicDataCollection('subscriptions').doc(id).delete();
-    print("✅ Subscription deleted: $id");
   } catch (error) { print("❌ Error deleting subscription: $error"); }
 }
 
 Future<void> addProduct(ProductModel product) async {
   try {
     await _getPublicDataCollection('products').add(product.toFirestore());
-    print("✅ Product added: ${product.name}");
   } catch (error) { print("❌ Error adding product: $error"); }
 }
 
 Future<void> deleteProduct(String id) async {
   try {
     await _getPublicDataCollection('products').doc(id).delete();
-    print("✅ Product deleted: $id");
   } catch (error) { print("❌ Error deleting product: $error"); }
 }
 
 
 // =========================================================================
-// 3. الشاشة الرئيسية (Tabs Screen) - تصميم Ego Gym
+// 3. الشاشة الرئيسية (Tabs Screen) - Stateful
 // =========================================================================
 
-class StoreAndSubscriptionsScreen extends StatelessWidget {
+class StoreAndSubscriptionsScreen extends StatefulWidget {
   static const String routeName = '/store_subscriptions';
   
-  final bool isAdmin; 
+  const StoreAndSubscriptionsScreen({Key? key}) : super(key: key); 
+
+  @override
+  State<StoreAndSubscriptionsScreen> createState() => _StoreAndSubscriptionsScreenState();
+}
+
+class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScreen> {
   
-  const StoreAndSubscriptionsScreen({Key? key, this.isAdmin = false}) : super(key: key); 
+  bool _isAdmin = false;
+  bool _isLoading = true; // لمعالجة حالة التحميل
+  
+  @override
+  void initState() {
+    super.initState();
+    _checkAdminStatus();
+  }
+  
+  // دالة جلب حالة المدير
+  Future<void> _checkAdminStatus() async {
+    final status = await _fetchAdminStatusFromFirestore();
+    if (mounted) {
+      setState(() {
+        _isAdmin = status;
+        _isLoading = false;
+      });
+    }
+  }
 
   void _showAddModal(BuildContext context, int tabIndex) {
     if (tabIndex == 0) {
@@ -225,7 +251,14 @@ class StoreAndSubscriptionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool currentAdminStatus = isAdmin; 
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppColors.blackColor,
+        body: Center(child: CircularProgressIndicator(color: AppColors.accentColor)),
+      );
+    }
+    
+    final bool currentAdminStatus = _isAdmin; 
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -236,13 +269,13 @@ class StoreAndSubscriptionsScreen extends StatelessWidget {
             final tabController = DefaultTabController.of(context);
             
             return Scaffold(
-              backgroundColor: AppColors.blackColor, // خلفية سوداء
+              backgroundColor: AppColors.blackColor,
               appBar: AppBar(
                 title: Text(
                   currentAdminStatus ? 'المتجر والاشتراكات (إدارة)' : 'المتجر والاشتراكات', 
-                  style: const TextStyle(color: AppColors.accentColor, fontWeight: FontWeight.bold) // عنوان ذهبي
+                  style: const TextStyle(color: AppColors.accentColor, fontWeight: FontWeight.bold)
                 ),
-                backgroundColor: AppColors.blackColor, // شريط داكن
+                backgroundColor: AppColors.blackColor,
                 elevation: 0,
                 centerTitle: true,
                 iconTheme: const IconThemeData(color: AppColors.whiteColor),
@@ -251,18 +284,17 @@ class StoreAndSubscriptionsScreen extends StatelessWidget {
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.cardBackgroundColor, // خلفية داكنة للـ TabBar
+                      color: AppColors.cardBackgroundColor,
                       borderRadius: BorderRadius.circular(25),
                       border: Border.all(color: AppColors.primaryColor1.withOpacity(0.5)),
                     ),
                     child: TabBar(
-                      // 💡 استخدام الذهبي كلون مؤشر
                       indicator: BoxDecoration(
                         color: AppColors.accentColor,
                         borderRadius: BorderRadius.circular(25),
                       ),
-                      labelColor: AppColors.blackColor, // نص داكن على الذهبي
-                      unselectedLabelColor: AppColors.darkGrayColor, // نص فاتح على الداكن
+                      labelColor: AppColors.blackColor,
+                      unselectedLabelColor: AppColors.darkGrayColor,
                       labelStyle: const TextStyle(fontWeight: FontWeight.w700),
                       tabs: const [
                         Tab(text: 'الاشتراكات والعروض'),
@@ -281,13 +313,24 @@ class StoreAndSubscriptionsScreen extends StatelessWidget {
               // زر الإضافة يظهر فقط في وضع الإدارة
               floatingActionButton: currentAdminStatus 
                 ? FloatingActionButton(
+                    heroTag: 'add_new_item_fab',           
                     onPressed: () {
                       _showAddModal(context, tabController.index);
                     },
-                    backgroundColor: AppColors.primaryColor1, // ماروني
+                    backgroundColor: AppColors.primaryColor1,
                     child: const Icon(Icons.add, color: AppColors.whiteColor),
                   )
                 : null,
+                bottomNavigationBar: const BottomAppBar(
+                  color: Colors.transparent, 
+                  elevation: 0, 
+                  height: 30, // لرفع زر الإضافة قليلاً
+                  child: Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[],
+                  ),
+                ),
             );
           }
         ),
@@ -297,7 +340,7 @@ class StoreAndSubscriptionsScreen extends StatelessWidget {
 }
 
 // =========================================================================
-// 4. مكون (Widget) عروض الاشتراكات - تصميم Ego Gym
+// 4. مكون (Widget) عروض الاشتراكات
 // =========================================================================
 
 class SubscriptionsTab extends StatelessWidget {
@@ -347,7 +390,6 @@ class SubscriptionsTab extends StatelessWidget {
           return const Center(child: CircularProgressIndicator(color: AppColors.accentColor));
         }
         if (snapshot.hasError) {
-          print('Error loading subscriptions: ${snapshot.error}');
           return Center(child: Text('خطأ في تحميل البيانات: ${snapshot.error}', style: const TextStyle(color: AppColors.redColor)));
         }
         
@@ -363,7 +405,6 @@ class SubscriptionsTab extends StatelessWidget {
           itemBuilder: (context, index) {
             final sub = subscriptions[index];
             
-            // خاصية السحب للحذف تعمل فقط في وضع الإدارة
             if (isAdmin) {
               return Dismissible(
                 key: Key(sub.id),
@@ -397,7 +438,7 @@ class SubscriptionCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: AppColors.cardBackgroundColor, // خلفية داكنة
+        color: AppColors.cardBackgroundColor,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
@@ -407,18 +448,17 @@ class SubscriptionCard extends StatelessWidget {
           ),
         ],
         border: sub.hasDiscount 
-            ? Border.all(color: AppColors.accentColor, width: 2) // إطار ذهبي للعرض
+            ? Border.all(color: AppColors.accentColor, width: 2)
             : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // شريط الخصم الواضح
           if (sub.hasDiscount)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 15),
               decoration: BoxDecoration(
-                color: AppColors.accentColor, // شريط الخصم ذهبي
+                color: AppColors.accentColor,
                 borderRadius: const BorderRadius.only(
                   topRight: Radius.circular(15),
                   topLeft: Radius.circular(15),
@@ -427,7 +467,7 @@ class SubscriptionCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   sub.discountText,
-                  style: const TextStyle(color: AppColors.blackColor, fontWeight: FontWeight.bold, fontSize: 14), // نص داكن على الذهبي
+                  style: const TextStyle(color: AppColors.blackColor, fontWeight: FontWeight.bold, fontSize: 14),
                 ),
               ),
             ),
@@ -440,7 +480,7 @@ class SubscriptionCard extends StatelessWidget {
                 Text(
                   sub.title,
                   style: const TextStyle(
-                      color: AppColors.whiteColor, // عنوان أبيض
+                      color: AppColors.whiteColor,
                       fontSize: 18,
                       fontWeight: FontWeight.w800),
                 ),
@@ -448,12 +488,11 @@ class SubscriptionCard extends StatelessWidget {
                 Text(
                   sub.description,
                   style: const TextStyle(
-                      color: AppColors.darkGrayColor, // وصف رمادي فاتح
+                      color: AppColors.darkGrayColor,
                       fontSize: 12),
                 ),
                 const SizedBox(height: 15),
 
-                // عرض السعر
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
@@ -463,7 +502,7 @@ class SubscriptionCard extends StatelessWidget {
                         ? "${sub.discountedPrice.toStringAsFixed(2)} ج.م" 
                         : "${sub.price.toStringAsFixed(2)} ج.م",
                       style: TextStyle(
-                          color: sub.hasDiscount ? AppColors.redColor : AppColors.accentColor, // سعر أساسي ذهبي، سعر الخصم أحمر
+                          color: sub.hasDiscount ? AppColors.redColor : AppColors.accentColor,
                           fontSize: sub.hasDiscount ? 24 : 18,
                           fontWeight: FontWeight.w900),
                     ),
@@ -487,14 +526,13 @@ class SubscriptionCard extends StatelessWidget {
                       ),
                       child: Text(
                         sub.duration,
-                        style: TextStyle(color: AppColors.primaryColor1, fontSize: 12, fontWeight: FontWeight.bold), // مدة ماروني
+                        style: const TextStyle(color: AppColors.primaryColor1, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 15),
 
-                // عرض المميزات
                 ...sub.features.map((feature) => Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: Row(
@@ -503,7 +541,7 @@ class SubscriptionCard extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             feature,
-                            style: const TextStyle(color: AppColors.whiteColor, fontSize: 13), // ميزة بيضاء
+                            style: const TextStyle(color: AppColors.whiteColor, fontSize: 13),
                           ),
                         ],
                       ),
@@ -513,9 +551,8 @@ class SubscriptionCard extends StatelessWidget {
                 Center(
                   child: ElevatedButton(
                     onPressed: () {
-                      print("اشتراك في ${sub.title} - ID: ${sub.id}");
+                      // منطق الشراء
                     },
-                    // زر ماروني بلون الثيم
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryColor1,
                       shape: RoundedRectangleBorder(
@@ -538,7 +575,7 @@ class SubscriptionCard extends StatelessWidget {
 
 
 // =========================================================================
-// 5. مكون (Widget) متجر المنتجات - تصميم Ego Gym
+// 5. مكون (Widget) متجر المنتجات
 // =========================================================================
 
 class ProductsTab extends StatelessWidget {
@@ -555,7 +592,6 @@ class ProductsTab extends StatelessWidget {
   }
 
   Future<bool?> _confirmDelete(BuildContext context, String itemName) async {
-    // تم استخدام دالة التأكيد المُعدلة في SubscriptionsTab
     return showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -588,7 +624,6 @@ class ProductsTab extends StatelessWidget {
           return const Center(child: CircularProgressIndicator(color: AppColors.accentColor));
         }
         if (snapshot.hasError) {
-           print('Error loading products: ${snapshot.error}');
           return Center(child: Text('خطأ في تحميل المنتجات: ${snapshot.error}', style: const TextStyle(color: AppColors.redColor)));
         }
 
@@ -612,7 +647,6 @@ class ProductsTab extends StatelessWidget {
 
             Widget productWidget = ProductCard(product: product);
             
-            // خاصية السحب للحذف تعمل فقط في وضع الإدارة
             if (isAdmin) {
               productWidget = Dismissible(
                 key: Key(product.id),
@@ -645,7 +679,7 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardBackgroundColor, // خلفية داكنة
+        color: AppColors.cardBackgroundColor,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
@@ -657,13 +691,12 @@ class ProductCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          print("فتح تفاصيل المنتج: ${product.name} - ID: ${product.id}");
+          // منطق فتح التفاصيل
         },
         borderRadius: BorderRadius.circular(15),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // صورة المنتج مع شارة الخصم
             Stack(
               children: [
                 ClipRRect(
@@ -687,7 +720,7 @@ class ProductCard extends StatelessWidget {
                     errorBuilder: (context, error, stackTrace) => Container(
                        height: 120,
                        color: AppColors.primaryColor1.withOpacity(0.2),
-                       child: const Center(child: Icon(Icons.fitness_center, color: AppColors.accentColor, size: 50)), // أيقونة ذهبية
+                       child: const Center(child: Icon(Icons.fitness_center, color: AppColors.accentColor, size: 50)),
                     ),
                   ),
                 ),
@@ -698,12 +731,12 @@ class ProductCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.accentColor, // شارة ذهبية
+                        color: AppColors.accentColor,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
                         "عرض",
-                        style: TextStyle(color: AppColors.blackColor, fontSize: 10, fontWeight: FontWeight.bold), // نص داكن على الذهبي
+                        style: TextStyle(color: AppColors.blackColor, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -720,18 +753,17 @@ class ProductCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        color: AppColors.whiteColor, // نص أبيض
+                        color: AppColors.whiteColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     product.category,
-                    style: const TextStyle(color: AppColors.darkGrayColor, fontSize: 10), // نص رمادي
+                    style: const TextStyle(color: AppColors.darkGrayColor, fontSize: 10),
                   ),
                   const SizedBox(height: 8),
                   
-                  // السعر
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -752,7 +784,7 @@ class ProductCard extends StatelessWidget {
                               ? "${product.discountedPrice.toStringAsFixed(2)} ج.م" 
                               : "${product.price.toStringAsFixed(2)} ج.م",
                             style: TextStyle(
-                              color: product.hasDiscount ? AppColors.accentColor : AppColors.primaryColor1, // ذهبي للخصم، ماروني للسعر العادي
+                              color: product.hasDiscount ? AppColors.accentColor : AppColors.primaryColor1,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
@@ -760,17 +792,16 @@ class ProductCard extends StatelessWidget {
                         ],
                       ),
                       
-                      // زر الشراء/إضافة للسلة
                       Container(
                         width: 35,
                         height: 35,
                         decoration: BoxDecoration(
-                          color: AppColors.primaryColor1, // ماروني
+                          color: AppColors.primaryColor1,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: InkWell(
                           onTap: () {
-                            print("أضيف ${product.name} إلى السلة. ID: ${product.id}");
+                            // منطق الإضافة للسلة
                           },
                           child: const Icon(Icons.add_shopping_cart, color: AppColors.whiteColor, size: 20),
                         ),
@@ -788,7 +819,7 @@ class ProductCard extends StatelessWidget {
 }
 
 // =========================================================================
-// 6. واجهة إضافة اشتراك (Modal) (وضع الإدارة) - تصميم Ego Gym
+// 6. واجهة إضافة اشتراك (Modal)
 // =========================================================================
 
 class AddSubscriptionModal extends StatefulWidget {
@@ -811,15 +842,15 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
-        style: const TextStyle(color: AppColors.whiteColor), // نص الإدخال أبيض
+        style: const TextStyle(color: AppColors.whiteColor),
         decoration: InputDecoration(
           labelText: label,
           hintText: helpText,
-          labelStyle: const TextStyle(color: AppColors.darkGrayColor), // نص العنوان رمادي
+          labelStyle: const TextStyle(color: AppColors.darkGrayColor),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-          fillColor: AppColors.lightGrayColor, // خلفية حقل داكنة قليلاً
+          fillColor: AppColors.lightGrayColor,
           filled: true,
-          focusedBorder: OutlineInputBorder( // إطار ذهبي عند التركيز
+          focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(color: AppColors.accentColor, width: 1.5),
           ),
@@ -849,6 +880,14 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
       final price = double.tryParse(_priceController.text) ?? 0.0;
       final discountedPrice = double.tryParse(_discountController.text) ?? 0.0;
 
+      // 🟢 التحقق من منطقية الخصم
+      if (discountedPrice > price && discountedPrice > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('❌ سعر الخصم لا يمكن أن يكون أكبر من السعر الأصلي.'), backgroundColor: AppColors.redColor),
+          );
+          return;
+      }
+      
       final newSub = SubscriptionModel(
         id: '', 
         title: _titleController.text,
@@ -860,10 +899,12 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
       );
 
       addSubscription(newSub).then((_) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تم إضافة ${newSub.title} بنجاح!', style: TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
-        );
+        if(mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تم إضافة ${newSub.title} بنجاح!', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
+          );
+        }
       });
     }
   }
@@ -877,7 +918,7 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: const BoxDecoration(
-          color: AppColors.cardBackgroundColor, // خلفية المودال داكنة
+          color: AppColors.cardBackgroundColor,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(30),
             topRight: Radius.circular(30),
@@ -891,8 +932,8 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
               Center(
                 child: Text(
                   'إضافة اشتراك جديد',
-                  style: TextStyle(
-                    color: AppColors.accentColor, // عنوان ذهبي
+                  style: const TextStyle(
+                    color: AppColors.accentColor,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -914,7 +955,7 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
               ElevatedButton(
                 onPressed: _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor1, // زر ماروني
+                  backgroundColor: AppColors.primaryColor1,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                   padding: const EdgeInsets.symmetric(vertical: 15),
                 ),
@@ -929,7 +970,7 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
 }
 
 // =========================================================================
-// 7. واجهة إضافة منتج (Modal) (وضع الإدارة) - تصميم Ego Gym
+// 7. واجهة إضافة منتج (Modal)
 // =========================================================================
 
 class AddProductModal extends StatefulWidget {
@@ -988,6 +1029,14 @@ class _AddProductModalState extends State<AddProductModal> {
       
       final price = double.tryParse(_priceController.text) ?? 0.0;
       final discountedPrice = double.tryParse(_discountController.text) ?? 0.0;
+      
+      // 🟢 التحقق من منطقية الخصم
+      if (discountedPrice > price && discountedPrice > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('❌ سعر الخصم لا يمكن أن يكون أكبر من السعر الأصلي.'), backgroundColor: AppColors.redColor),
+          );
+          return;
+      }
 
       final newProduct = ProductModel(
         id: '', 
@@ -1000,10 +1049,12 @@ class _AddProductModalState extends State<AddProductModal> {
       );
 
       addProduct(newProduct).then((_) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تم إضافة ${newProduct.name} بنجاح!', style: TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
-        );
+        if(mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تم إضافة ${newProduct.name} بنجاح!', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
+          );
+        }
       });
     }
   }
@@ -1017,7 +1068,7 @@ class _AddProductModalState extends State<AddProductModal> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: const BoxDecoration(
-          color: AppColors.cardBackgroundColor, // خلفية المودال داكنة
+          color: AppColors.cardBackgroundColor,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(30),
             topRight: Radius.circular(30),
@@ -1031,8 +1082,8 @@ class _AddProductModalState extends State<AddProductModal> {
               Center(
                 child: Text(
                   'إضافة منتج جديد',
-                  style: TextStyle(
-                    color: AppColors.accentColor, // عنوان ذهبي
+                  style: const TextStyle(
+                    color: AppColors.accentColor,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1049,7 +1100,7 @@ class _AddProductModalState extends State<AddProductModal> {
               ElevatedButton(
                 onPressed: _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor1, // زر ماروني
+                  backgroundColor: AppColors.primaryColor1,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                   padding: const EdgeInsets.symmetric(vertical: 15),
                 ),

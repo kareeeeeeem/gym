@@ -1,12 +1,363 @@
-import 'package:fitnessapp/const/common_widgets/round_gradient_button.dart';
-import 'package:fitnessapp/const/utils/app_colors.dart';
-import 'package:fitnessapp/view/workour_detail_view/widgets/exercises_set_section.dart';
-import 'package:fitnessapp/view/workour_detail_view/widgets/icon_title_next_row.dart';
-import 'package:fitnessapp/view/workout_schedule_view/workout_schedule_view.dart';
 import 'package:flutter/material.dart';
 
-import '../../const/common_widgets/round_button.dart';
-import 'exercises_stpe_details.dart';
+// =========================================================================
+// 1. تعريف الألوان (Ego Gym Theme)
+// =========================================================================
+
+class AppColors {
+  static const Color whiteColor = Color(0xFFFFFFFF);
+  static const Color blackColor = Color(0xFF1D1617);
+  static const Color darkGrayColor = Color(0xFF707070); 
+  static const Color grayColor = Color(0xFFC0C0C0); 
+  static const Color lightGrayColor = Color(0xFFF1F1F1); 
+  static const Color primaryColor1 = Color(0xFF8B0000); // ماروني داكن
+  static const Color accentColor = Color(0xFFFFA500); // ذهبي/عنبري
+  static const Color primaryColor2 = Color(0xFFCC5500); 
+  static const Color secondaryColor2 = Color(0xFFDCDCDC); // لون فاتح للتمييز
+  
+  static List<Color> primaryG = [
+    primaryColor1,
+    primaryColor2, 
+  ];
+}
+
+
+// =========================================================================
+// 2. Mock Screens and Custom Widgets
+// =========================================================================
+
+// Mock 2.1: شاشة تفاصيل خطوة التمرين
+class ExercisesStepDetails extends StatelessWidget {
+  final Map eObj;
+  const ExercisesStepDetails({Key? key, required this.eObj}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          eObj["title"]?.toString() ?? "خطوة التمرين",
+          style: const TextStyle(color: AppColors.whiteColor),
+        ),
+        backgroundColor: AppColors.primaryColor1,
+        iconTheme: const IconThemeData(color: AppColors.whiteColor),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // محتوى تفصيلي عن التمرين
+            Text(
+              eObj["title"]?.toString() ?? "",
+              style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.blackColor),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              "القيمة: ${eObj["value"]?.toString() ?? ""}",
+              style: const TextStyle(fontSize: 16, color: AppColors.darkGrayColor),
+            ),
+            const SizedBox(height: 20),
+            // عرض رابط الفيديو
+            if (eObj["video_url"] != null)
+              Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: AppColors.accentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "شاهد الشرح (YouTube):",
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryColor1),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        // في بيئة الإنتاج، يتم فتح الرابط هنا
+                        print("Opening Video URL: ${eObj["video_url"]}");
+                      },
+                      child: Text(
+                        eObj["video_url"].toString(),
+                        style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 20),
+            const Text(
+              "الوصف:",
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.blackColor),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              "هذا القسم يوضح بالتفصيل كيفية أداء تمرين ${eObj["title"]}. تأكد من الحفاظ على الوضعية الصحيحة لتجنب الإصابات. ركز على التنفس أثناء الأداء.",
+              style: const TextStyle(fontSize: 16, color: AppColors.darkGrayColor),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Mock 2.2: شاشة جدولة التمرين
+class WorkoutScheduleView extends StatelessWidget {
+  static const String routeName = "/workout_schedule";
+  const WorkoutScheduleView({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("جدولة التمرين", style: TextStyle(color: AppColors.whiteColor)),
+        backgroundColor: AppColors.primaryColor1,
+        iconTheme: const IconThemeData(color: AppColors.whiteColor),
+      ),
+      body: const Center(
+        child: Text(
+          "شاشة تحديد موعد التمرين",
+          style: TextStyle(fontSize: 18, color: AppColors.blackColor),
+        ),
+      ),
+    );
+  }
+}
+
+// Mock 2.3: زر التدرج اللوني (RoundGradientButton)
+class RoundGradientButton extends StatelessWidget {
+  final String title;
+  final VoidCallback onPressed;
+  
+  const RoundGradientButton({
+    Key? key,
+    required this.title,
+    required this.onPressed,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20, left: 15, right: 15),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: AppColors.primaryG),
+        borderRadius: BorderRadius.circular(99),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryColor1.withOpacity(0.5),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: MaterialButton(
+        onPressed: onPressed,
+        minWidth: double.maxFinite,
+        height: 55,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+        child: Text(
+          title,
+          style: const TextStyle(
+              color: AppColors.whiteColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w700),
+        ),
+      ),
+    );
+  }
+}
+
+// Mock 2.4: صف الأيقونة والعنوان والزر التالي (IconTitleNextRow)
+class IconTitleNextRow extends StatelessWidget {
+  final String icon;
+  final String title;
+  final String time;
+  final Color color;
+  final VoidCallback onPressed;
+  
+  const IconTitleNextRow({
+    Key? key,
+    required this.icon,
+    required this.title,
+    required this.time,
+    required this.color,
+    required this.onPressed,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              // استبدال Image.asset بأيقونة
+              Icon(
+                title.contains("Schedule") ? Icons.schedule : Icons.star,
+                color: AppColors.primaryColor1,
+              ),
+              const SizedBox(width: 15),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppColors.blackColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          InkWell(
+            onTap: onPressed,
+            child: Row(
+              children: [
+                Text(
+                  time,
+                  style: const TextStyle(
+                    color: AppColors.darkGrayColor,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: AppColors.darkGrayColor,
+                  size: 15,
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+// Mock 2.5: قسم مجموعات التمرين (ExercisesSetSection)
+class ExercisesSetSection extends StatelessWidget {
+  final Map sObj;
+  final Function(Map obj) onPressed;
+  
+  const ExercisesSetSection({Key? key, required this.sObj, required this.onPressed})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    var setArr = sObj["set"] as List? ?? [];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 15, bottom: 8),
+          child: Text(
+            sObj["name"]?.toString() ?? "مجموعة التمارين",
+            style: const TextStyle(
+                color: AppColors.blackColor,
+                fontSize: 16,
+                fontWeight: FontWeight.w700),
+          ),
+        ),
+        ListView.builder(
+            padding: EdgeInsets.zero,
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            itemCount: setArr.length,
+            itemBuilder: (context, index) {
+              var eObj = setArr[index] as Map? ?? {};
+              return InkWell(
+                onTap: () {
+                  onPressed(eObj);
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 5),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.whiteColor,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.grayColor.withOpacity(0.1),
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // استبدال الصورة بأيقونة
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryColor1.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.fitness_center, color: AppColors.primaryColor1, size: 30),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              eObj["title"].toString(),
+                              style: const TextStyle(
+                                color: AppColors.blackColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              eObj["value"].toString().contains("x")
+                                  ? "${eObj["value"]} Repetitions"
+                                  : "${eObj["value"]} Time",
+                              style: const TextStyle(
+                                color: AppColors.darkGrayColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        color: AppColors.darkGrayColor,
+                        size: 15,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+      ],
+    );
+  }
+}
+
+
+// =========================================================================
+// 3. الشاشة الرئيسية (WorkoutDetailView) - الكود المُعدَّل
+// =========================================================================
 
 class WorkoutDetailView extends StatefulWidget {
   final Map dObj;
@@ -17,70 +368,36 @@ class WorkoutDetailView extends StatefulWidget {
 }
 
 class _WorkoutDetailViewState extends State<WorkoutDetailView> {
-  List latestArr = [
-    {
-      "image": "assets/images/Workout1.png",
-      "title": "Fullbody Workout",
-      "time": "Today, 03:00pm"
-    },
-    {
-      "image": "assets/images/Workout2.png",
-      "title": "Upperbody Workout",
-      "time": "June 05, 02:00pm"
-    },
-  ];
 
+  // بيانات المعدات (تم استبدال صور assets بأيقونات)
   List youArr = [
-    {"image": "assets/icons/barbell.png", "title": "Barbell"},
-    {"image": "assets/icons/skipping_rope.png", "title": "Skipping Rope"},
-    {"image": "assets/icons/bottle.png", "title": "Bottle 1 Liters"},
+    {"icon": Icons.fitness_center, "title": "Barbell"},
+    {"icon": Icons.sports_tennis, "title": "Skipping Rope"},
+    {"icon": Icons.local_drink, "title": "Bottle 1 Liters"},
   ];
 
+  // بيانات التمارين (تم إضافة روابط فيديوهات مقترحة)
   List exercisesArr = [
     {
       "name": "Set 1",
       "set": [
-        {"image": "assets/images/img_1.png", "title": "Warm Up", "value": "05:00"},
-        {
-          "image": "assets/images/img_2.png",
-          "title": "Jumping Jack",
-          "value": "12x"
-        },
-        {"image": "assets/images/img_1.png", "title": "Skipping", "value": "15x"},
-        {"image": "assets/images/img_2.png", "title": "Squats", "value": "20x"},
-        {
-          "image": "assets/images/img_1.png",
-          "title": "Arm Raises",
-          "value": "00:53"
-        },
-        {
-          "image": "assets/images/img_2.png",
-          "title": "Rest and Drink",
-          "value": "02:00"
-        },
+        {"title": "Warm Up", "value": "05:00", "video_url": "https://youtu.be/G2E2XwK6mG0"},
+        {"title": "Jumping Jack", "value": "12x", "video_url": "https://youtu.be/rfJ3X7U6z20"},
+        {"title": "Skipping", "value": "15x", "video_url": "https://youtu.be/tEaH-1D-0oQ"},
+        {"title": "Squats", "value": "20x", "video_url": "https://youtu.be/aclHhFWD75M"},
+        {"title": "Arm Raises", "value": "00:53", "video_url": "https://youtu.be/u88d8b_Wq1Y"},
+        {"title": "Rest and Drink", "value": "02:00", "video_url": null}, // لا يوجد فيديو
       ],
     },
     {
       "name": "Set 2",
       "set": [
-        {"image": "assets/images/img_1.png", "title": "Warm Up", "value": "05:00"},
-        {
-          "image": "assets/images/img_2.png",
-          "title": "Jumping Jack",
-          "value": "12x"
-        },
-        {"image": "assets/images/img_1.png", "title": "Skipping", "value": "15x"},
-        {"image": "assets/images/img_2.png", "title": "Squats", "value": "20x"},
-        {
-          "image": "assets/images/img_1.png",
-          "title": "Arm Raises",
-          "value": "00:53"
-        },
-        {
-          "image": "assets/images/img_2.png",
-          "title": "Rest and Drink",
-          "value": "02:00"
-        },
+        {"title": "Warm Up", "value": "05:00", "video_url": "https://youtu.be/G2E2XwK6mG0"},
+        {"title": "Jumping Jack", "value": "12x", "video_url": "https://youtu.be/rfJ3X7U6z20"},
+        {"title": "Skipping", "value": "15x", "video_url": "https://youtu.be/tEaH-1D-0oQ"},
+        {"title": "Squats", "value": "20x", "video_url": "https://youtu.be/aclHhFWD75M"},
+        {"title": "Arm Raises", "value": "00:53", "video_url": "https://youtu.be/u88d8b_Wq1Y"},
+        {"title": "Rest and Drink", "value": "02:00", "video_url": null},
       ],
     }
   ];
@@ -110,11 +427,10 @@ class _WorkoutDetailViewState extends State<WorkoutDetailView> {
                   decoration: BoxDecoration(
                       color: AppColors.lightGrayColor,
                       borderRadius: BorderRadius.circular(10)),
-                  child: Image.asset(
-                    "assets/icons/back_icon.png",
-                    width: 15,
-                    height: 15,
-                    fit: BoxFit.contain,
+                  child: const Icon( // أيقونة رجوع
+                    Icons.arrow_back_ios_new,
+                    size: 15,
+                    color: AppColors.blackColor,
                   ),
                 ),
               ),
@@ -129,11 +445,10 @@ class _WorkoutDetailViewState extends State<WorkoutDetailView> {
                     decoration: BoxDecoration(
                         color: AppColors.lightGrayColor,
                         borderRadius: BorderRadius.circular(10)),
-                    child: Image.asset(
-                      "assets/icons/more_icon.png",
-                      width: 15,
-                      height: 15,
-                      fit: BoxFit.contain,
+                    child: const Icon( // أيقونة المزيد
+                      Icons.more_horiz,
+                      size: 15,
+                      color: AppColors.blackColor,
                     ),
                   ),
                 )
@@ -148,11 +463,10 @@ class _WorkoutDetailViewState extends State<WorkoutDetailView> {
               expandedHeight: media.width * 0.5,
               flexibleSpace: Align(
                 alignment: Alignment.center,
-                child: Image.asset(
-                  "assets/images/detail_top.png",
-                  width: media.width * 0.75,
-                  height: media.width * 0.8,
-                  fit: BoxFit.contain,
+                child: Icon( // صورة placeholder للتمرين الرئيسي
+                  Icons.directions_run,
+                  size: media.width * 0.4,
+                  color: AppColors.whiteColor.withOpacity(0.8),
                 ),
               ),
             ),
@@ -193,14 +507,14 @@ class _WorkoutDetailViewState extends State<WorkoutDetailView> {
                               children: [
                                 Text(
                                   widget.dObj["title"].toString(),
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       color: AppColors.blackColor,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700),
                                 ),
                                 Text(
                                   "${widget.dObj["exercises"].toString()} | ${widget.dObj["time"].toString()} | 320 Calories Burn",
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       color: AppColors.grayColor, fontSize: 12),
                                 ),
                               ],
@@ -208,11 +522,10 @@ class _WorkoutDetailViewState extends State<WorkoutDetailView> {
                           ),
                           TextButton(
                             onPressed: () {},
-                            child: Image.asset(
-                              "assets/icons/fav_icon.png",
-                              width: 15,
-                              height: 15,
-                              fit: BoxFit.contain,
+                            child: const Icon(
+                              Icons.favorite_border,
+                              color: AppColors.primaryColor1,
+                              size: 20,
                             ),
                           )
                         ],
@@ -226,7 +539,7 @@ class _WorkoutDetailViewState extends State<WorkoutDetailView> {
                           time: "5/27, 09:00 AM",
                           color: AppColors.primaryColor2.withOpacity(0.3),
                           onPressed: () {
-                            Navigator.pushNamed(context, WorkoutScheduleView.routeName);
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const WorkoutScheduleView()));
                           }),
                       SizedBox(
                         height: media.width * 0.02,
@@ -243,7 +556,7 @@ class _WorkoutDetailViewState extends State<WorkoutDetailView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
+                          const Text(
                             "You'll Need",
                             style: TextStyle(
                                 color: AppColors.blackColor,
@@ -255,7 +568,7 @@ class _WorkoutDetailViewState extends State<WorkoutDetailView> {
                             child: Text(
                               "${youArr.length} Items",
                               style:
-                              TextStyle(color: AppColors.grayColor, fontSize: 12),
+                              const TextStyle(color: AppColors.grayColor, fontSize: 12),
                             ),
                           )
                         ],
@@ -283,18 +596,17 @@ class _WorkoutDetailViewState extends State<WorkoutDetailView> {
                                             borderRadius:
                                             BorderRadius.circular(15)),
                                         alignment: Alignment.center,
-                                        child: Image.asset(
-                                          yObj["image"].toString(),
-                                          width: media.width * 0.2,
-                                          height: media.width * 0.2,
-                                          fit: BoxFit.contain,
+                                        child: Icon(
+                                          yObj["icon"] as IconData,
+                                          size: media.width * 0.2,
+                                          color: AppColors.darkGrayColor,
                                         ),
                                       ),
                                       Padding(
                                         padding: const EdgeInsets.all(8.0),
                                         child: Text(
                                           yObj["title"].toString(),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                               color: AppColors.blackColor,
                                               fontSize: 12),
                                         ),
@@ -309,7 +621,7 @@ class _WorkoutDetailViewState extends State<WorkoutDetailView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
+                          const Text(
                             "Exercises",
                             style: TextStyle(
                                 color: AppColors.blackColor,
@@ -319,9 +631,9 @@ class _WorkoutDetailViewState extends State<WorkoutDetailView> {
                           TextButton(
                             onPressed: () {},
                             child: Text(
-                              "${youArr.length} Sets",
+                              "${exercisesArr.length} Sets",
                               style:
-                              TextStyle(color: AppColors.grayColor, fontSize: 12),
+                              const TextStyle(color: AppColors.grayColor, fontSize: 12),
                             ),
                           )
                         ],

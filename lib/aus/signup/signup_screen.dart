@@ -1,6 +1,6 @@
-import 'package:fitnessapp/view/home/home_screen.dart';
-import 'package:fitnessapp/view/login/login_screen.dart';
-import 'package:fitnessapp/view/profile/complete_profile_screen.dart';
+import 'package:fitnessapp/view/dashboard/home/home_screen.dart';
+import 'package:fitnessapp/aus/login/login_screen.dart';
+import 'package:fitnessapp/view/dashboard/profile/complete_profile_screen.dart';
 import 'package:fitnessapp/view/welcome/welcome_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
