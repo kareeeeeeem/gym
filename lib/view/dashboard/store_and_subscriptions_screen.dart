@@ -1,27 +1,114 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
-
-// ⚠️ استبدل هذا باستدعاء دالة التحقق من صلاحية المدير الفعلية في مشروعك.
-// هذه مجرد دالة وهمية للمحاكاة.
-// *************************************************************************
-Future<bool> _fetchAdminStatusFromFirestore() async {
-  // 💡 يجب أن تستبدل هذا بالمنطق الذي يحقق من حقل 'isAdmin' في وثيقة المستخدم الحالية.
-  // مثال:
-  // final user = FirebaseAuth.instance.currentUser;
-  // if (user != null) {
-  //   final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-  //   return userDoc.data()?['isAdmin'] ?? false;
-  // }
-  // return false;
-
-  await Future.delayed(const Duration(milliseconds: 500)); 
-  return true; // استخدم True للاختبار بوضع المدير، ثم عدلها إلى المنطق الفعلي
-}
-// *************************************************************************
+import 'package:firebase_auth/firebase_auth.dart'; 
+import 'dart:async'; 
 
 // =========================================================================
-// 1. تعريف الألوان والنماذج (Ego Gym Theme - Deep Red/Maroon & Electric Gold)
+// 0. Widgets Definitions (RoundButton) - ADDED FOR COMPLETENESS
+// =========================================================================
+
+enum RoundButtonType { primaryBG, secondaryBG }
+
+class RoundButton extends StatelessWidget {
+  final String title;
+  final RoundButtonType type;
+  final VoidCallback? onPressed;
+  final double height;
+  final double width;
+
+  const RoundButton({
+    super.key,
+    required this.title,
+    required this.type,
+    required this.onPressed,
+    this.height = 50, 
+    this.width = double.maxFinite
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    List<Color> primaryG = [const Color(0xFF8B0000), const Color(0xFFFFA500)]; // Using AppColors placeholders
+    List<Color> secondaryG = [const Color(0xFFFFA500), const Color(0xFF8B0000)]; // Using AppColors placeholders
+
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+          gradient: LinearGradient(
+              colors: type == RoundButtonType.primaryBG ? primaryG : secondaryG,
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight),
+          borderRadius: BorderRadius.circular(999), 
+          boxShadow: [
+            BoxShadow(
+                color: primaryG[0].withOpacity(0.4), 
+                blurRadius: 10, 
+                offset: const Offset(0, 4))
+          ]),
+      child: MaterialButton(
+        minWidth: double.maxFinite,
+        height: height,
+        onPressed: onPressed,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        textColor: const Color(0xFFFFFFFF),
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            color: Color(0xFFFFFFFF),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// =========================================================================
+// 1. دالة التحقق من حالة المدير (المنطق الحقيقي)
+// =========================================================================
+
+Future<bool> _fetchAdminStatusFromFirestore() async {
+  // 1. جلب المستخدم الحالي
+  final user = FirebaseAuth.instance.currentUser;
+
+  if (user != null) {
+    // 📌 قائمة اختبار لمدراء التطوير (يمكن إضافة إيميل المطورين هنا كطبقة أمان ثانية)
+    final List<String> developerAdmins = const [
+      "micohelmy5@gmail.com", 
+    ];
+    final userEmail = user.email?.toLowerCase() ?? '';
+
+    // التحقق من قائمة المطورين أولاً
+    if (developerAdmins.contains(userEmail)) {
+        return true; 
+    }
+
+    try {
+      // 2. محاولة جلب وثيقة المستخدم من مجموعة 'users'
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users') 
+          .doc(user.uid)
+          .get();
+          
+      // 3. التحقق مما إذا كانت الوثيقة موجودة وتحتوي على حقل 'isAdmin'
+      if (userDoc.exists) {
+        final isAdminStatus = userDoc.data()?['isAdmin'] as bool? ?? false;
+        return isAdminStatus; 
+      }
+    } catch (e) {
+      print("Error fetching admin status: $e");
+      return false;
+    }
+  }
+  return false; 
+}
+
+
+// =========================================================================
+// 2. تعريف الألوان والنماذج (Models & Colors)
 // =========================================================================
 
 class AppColors {
@@ -138,12 +225,13 @@ class ProductModel {
 }
 
 // =========================================================================
-// 2. دوال Firestore (CRUD Operations)
+// 3. دوال Firestore (CRUD Operations)
 // =========================================================================
 
 final FirebaseFirestore _db = FirebaseFirestore.instance;
 
 String get _appId {
+  // 💡 يمكنك تغيير هذا ليتناسب مع هيكلية قاعدة بياناتك الحقيقية إذا لم تكن تستخدم String.fromEnvironment
   return (const String.fromEnvironment('app_id', defaultValue: 'default-app-id')); 
 }
 
@@ -186,7 +274,10 @@ Future<void> deleteSubscription(String id) async {
 Future<void> addProduct(ProductModel product) async {
   try {
     await _getPublicDataCollection('products').add(product.toFirestore());
-  } catch (error) { print("❌ Error adding product: $error"); }
+  } catch (error) { 
+    print("❌ Error adding product: $error"); 
+    throw error; // 💡 إعادة رمي الخطأ لكي تلتقطه دالة _submit
+  }
 }
 
 Future<void> deleteProduct(String id) async {
@@ -197,7 +288,7 @@ Future<void> deleteProduct(String id) async {
 
 
 // =========================================================================
-// 3. الشاشة الرئيسية (Tabs Screen) - Stateful
+// 4. الشاشة الرئيسية (Tabs Screen) - Stateful
 // =========================================================================
 
 class StoreAndSubscriptionsScreen extends StatefulWidget {
@@ -212,7 +303,7 @@ class StoreAndSubscriptionsScreen extends StatefulWidget {
 class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScreen> {
   
   bool _isAdmin = false;
-  bool _isLoading = true; // لمعالجة حالة التحميل
+  bool _isLoading = true;
   
   @override
   void initState() {
@@ -220,7 +311,6 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
     _checkAdminStatus();
   }
   
-  // دالة جلب حالة المدير
   Future<void> _checkAdminStatus() async {
     final status = await _fetchAdminStatusFromFirestore();
     if (mounted) {
@@ -231,20 +321,21 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
     }
   }
 
+  // ✅ تم التعديل: تمرير حالة المدير إلى AddProductModal
   void _showAddModal(BuildContext context, int tabIndex) {
     if (tabIndex == 0) {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (context) => AddSubscriptionModal(), 
+        builder: (context) => AddSubscriptionModal(isAdmin: _isAdmin), 
       );
     } else {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (context) => AddProductModal(), 
+        builder: (context) => AddProductModal(isAdmin: _isAdmin), 
       );
     }
   }
@@ -288,15 +379,15 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
                       borderRadius: BorderRadius.circular(25),
                       border: Border.all(color: AppColors.primaryColor1.withOpacity(0.5)),
                     ),
-                    child: TabBar(
+                    child: const TabBar(
                       indicator: BoxDecoration(
                         color: AppColors.accentColor,
-                        borderRadius: BorderRadius.circular(25),
+                     //   borderRadius: BorderRadius.circular(25),
                       ),
                       labelColor: AppColors.blackColor,
                       unselectedLabelColor: AppColors.darkGrayColor,
-                      labelStyle: const TextStyle(fontWeight: FontWeight.w700),
-                      tabs: const [
+                      labelStyle: TextStyle(fontWeight: FontWeight.w700),
+                      tabs: [
                         Tab(text: 'الاشتراكات والعروض'),
                         Tab(text: 'متجر المنتجات'),
                       ],
@@ -324,7 +415,7 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
                 bottomNavigationBar: const BottomAppBar(
                   color: Colors.transparent, 
                   elevation: 0, 
-                  height: 30, // لرفع زر الإضافة قليلاً
+                  height: 30,
                   child: Row(
                     mainAxisSize: MainAxisSize.max,
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -340,7 +431,7 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
 }
 
 // =========================================================================
-// 4. مكون (Widget) عروض الاشتراكات
+// 5. مكون (Widget) عروض الاشتراكات و SubscriptionCard
 // =========================================================================
 
 class SubscriptionsTab extends StatelessWidget {
@@ -414,7 +505,7 @@ class SubscriptionsTab extends StatelessWidget {
                 onDismissed: (direction) {
                   deleteSubscription(sub.id);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('تم حذف الاشتراك: ${sub.title}', style: TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
+                    SnackBar(content: Text('تم حذف الاشتراك: ${sub.title}', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
                   );
                 },
                 child: SubscriptionCard(sub: sub),
@@ -457,9 +548,9 @@ class SubscriptionCard extends StatelessWidget {
           if (sub.hasDiscount)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 15),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.accentColor,
-                borderRadius: const BorderRadius.only(
+                borderRadius: BorderRadius.only(
                   topRight: Radius.circular(15),
                   topLeft: Radius.circular(15),
                 ),
@@ -575,7 +666,7 @@ class SubscriptionCard extends StatelessWidget {
 
 
 // =========================================================================
-// 5. مكون (Widget) متجر المنتجات
+// 6. مكون (Widget) متجر المنتجات و ProductCard
 // =========================================================================
 
 class ProductsTab extends StatelessWidget {
@@ -656,7 +747,7 @@ class ProductsTab extends StatelessWidget {
                 onDismissed: (direction) {
                   deleteProduct(product.id);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('تم حذف المنتج: ${product.name}', style: TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
+                    SnackBar(content: Text('تم حذف المنتج: ${product.name}', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
                   );
                 },
                 child: productWidget,
@@ -819,10 +910,13 @@ class ProductCard extends StatelessWidget {
 }
 
 // =========================================================================
-// 6. واجهة إضافة اشتراك (Modal)
+// 7. واجهة إضافة اشتراك (Modal) - تم إضافة isAdmin
 // =========================================================================
 
 class AddSubscriptionModal extends StatefulWidget {
+  final bool isAdmin; 
+  const AddSubscriptionModal({Key? key, this.isAdmin = false}) : super(key: key);
+
   @override
   _AddSubscriptionModalState createState() => _AddSubscriptionModalState();
 }
@@ -837,6 +931,7 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
   final _featuresController = TextEditingController(); 
 
   Widget _buildTextField(TextEditingController controller, String label, {bool isRequired = false, bool isNumber = false, int maxLines = 1, String? helpText}) {
+    // ... (بناء حقل النص هنا كما في _AddProductModalState)
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: TextFormField(
@@ -872,15 +967,14 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
     );
   }
 
+
   void _submit() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       
-      final featuresList = _featuresController.text.split(',').map((f) => f.trim()).where((f) => f.isNotEmpty).toList();
       final price = double.tryParse(_priceController.text) ?? 0.0;
       final discountedPrice = double.tryParse(_discountController.text) ?? 0.0;
-
-      // 🟢 التحقق من منطقية الخصم
+      
       if (discountedPrice > price && discountedPrice > 0) {
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('❌ سعر الخصم لا يمكن أن يكون أكبر من السعر الأصلي.'), backgroundColor: AppColors.redColor),
@@ -888,6 +982,12 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
           return;
       }
       
+      final featuresList = _featuresController.text
+          .split(',')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+
       final newSub = SubscriptionModel(
         id: '', 
         title: _titleController.text,
@@ -909,6 +1009,7 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -930,9 +1031,9 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
             shrinkWrap: true,
             children: <Widget>[
               Center(
-                child: Text(
+                child: const Text(
                   'إضافة اشتراك جديد',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.accentColor,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -941,26 +1042,24 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
               ),
               const Divider(color: AppColors.darkGrayColor),
               _buildTextField(_titleController, 'عنوان الاشتراك', isRequired: true),
-              _buildTextField(_descController, 'الوصف المختصر', maxLines: 3),
+              _buildTextField(_descController, 'الوصف الموجز', maxLines: 2),
               _buildTextField(_priceController, 'السعر الأساسي (ج.م)', isRequired: true, isNumber: true),
               _buildTextField(_discountController, 'السعر بعد الخصم (ج.م) (اختياري)', isNumber: true),
               _buildTextField(_durationController, 'مدة الاشتراك (مثال: شهر، 3 أشهر)', isRequired: true),
-              _buildTextField(
-                _featuresController, 
-                'مميزات الاشتراك', 
-                maxLines: 3, 
-                helpText: 'افصل بين المميزات بفواصل (،)'
-              ),
+              _buildTextField(_featuresController, 'الميزات (افصلها بفاصلة)', maxLines: 3, helpText: 'مثال: دخول مجاني، متابعة شخصية، خطة غذائية'),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor1,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                  padding: const EdgeInsets.symmetric(vertical: 15),
+              
+              // 💡 زر الإضافة يظهر للمدير فقط
+              if (widget.isAdmin)
+                ElevatedButton(
+                  onPressed: _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor1,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                  ),
+                  child: const Text('إضافة الاشتراك', style: TextStyle(color: AppColors.whiteColor, fontSize: 16)),
                 ),
-                child: const Text('إضافة الاشتراك', style: TextStyle(color: AppColors.whiteColor, fontSize: 16)),
-              ),
             ],
           ),
         ),
@@ -969,11 +1068,16 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
   }
 }
 
+
 // =========================================================================
-// 7. واجهة إضافة منتج (Modal)
+// 8. واجهة إضافة منتج (Modal) - تم إضافة isAdmin
 // =========================================================================
 
 class AddProductModal extends StatefulWidget {
+  // ✅ تم التعديل: إضافة isAdmin
+  final bool isAdmin; 
+  const AddProductModal({Key? key, this.isAdmin = false}) : super(key: key);
+
   @override
   _AddProductModalState createState() => _AddProductModalState();
 }
@@ -987,7 +1091,10 @@ class _AddProductModalState extends State<AddProductModal> {
   final _categoryController = TextEditingController();
   final _imageUrlController = TextEditingController();
 
-  Widget _buildTextField(TextEditingController controller, String label, {bool isRequired = false, bool isNumber = false, int maxLines = 1, String? helpText}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+     String label,
+      {bool isRequired = false, bool isNumber = false, int maxLines = 1, String? helpText}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: TextFormField(
@@ -1023,21 +1130,26 @@ class _AddProductModalState extends State<AddProductModal> {
     );
   }
 
-  void _submit() {
+// ❌ الكود القديم
+// addProduct(newProduct).then((_) { ...
+
+// ✅ الكود الجديد
+void _submit() async { // 💡 اجعل الدالة asynchronous
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+      // ... منطق التحقق من الخصم ...
       
       final price = double.tryParse(_priceController.text) ?? 0.0;
       final discountedPrice = double.tryParse(_discountController.text) ?? 0.0;
       
-      // 🟢 التحقق من منطقية الخصم
+      // ... (التحقق من الخصم) ...
       if (discountedPrice > price && discountedPrice > 0) {
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('❌ سعر الخصم لا يمكن أن يكون أكبر من السعر الأصلي.'), backgroundColor: AppColors.redColor),
           );
           return;
       }
-
+      // ... (بناء newProduct) ...
       final newProduct = ProductModel(
         id: '', 
         name: _nameController.text,
@@ -1048,17 +1160,23 @@ class _AddProductModalState extends State<AddProductModal> {
         imageUrl: _imageUrlController.text,
       );
 
-      addProduct(newProduct).then((_) {
+      try {
+        await addProduct(newProduct); // 💡 استخدم await مباشرة
+
         if(mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('تم إضافة ${newProduct.name} بنجاح!', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
           );
         }
-      });
+      } catch (e) {
+        // 💡 رسالة خطأ واضحة للمستخدم
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل الإضافة: ${e.toString()}', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.redColor),
+        );
+      }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -1080,9 +1198,9 @@ class _AddProductModalState extends State<AddProductModal> {
             shrinkWrap: true,
             children: <Widget>[
               Center(
-                child: Text(
+                child: const Text(
                   'إضافة منتج جديد',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.accentColor,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -1097,15 +1215,18 @@ class _AddProductModalState extends State<AddProductModal> {
               _buildTextField(_categoryController, 'التصنيف (مثال: بروتين، مكملات، ملابس)', isRequired: true),
               _buildTextField(_imageUrlController, 'رابط صورة المنتج (URL)', isRequired: true),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor1,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                  padding: const EdgeInsets.symmetric(vertical: 15),
+              
+              // ✅ تم التعديل: زر الإضافة يظهر للمدير فقط
+              if (widget.isAdmin) 
+                ElevatedButton(
+                  onPressed: _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor1,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                  ),
+                  child: const Text('إضافة المنتج', style: TextStyle(color: AppColors.whiteColor, fontSize: 16)),
                 ),
-                child: const Text('إضافة المنتج', style: TextStyle(color: AppColors.whiteColor, fontSize: 16)),
-              ),
             ],
           ),
         ),

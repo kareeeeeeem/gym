@@ -44,6 +44,10 @@ class _CameraScreenState extends State<CameraScreen> {
 
   String? _lastCapturedImagePath; 
   bool _isPickingOrCapturing = false; // 🟢 الجديد: لمنع أي عملية تصوير/اختيار متزامنة
+  bool _isPermissionRequesting = false;
+
+
+
 
   @override
   void initState() {
@@ -75,39 +79,63 @@ Future<bool> checkAndRequestCameraPermission() async {
 
   return status.isGranted;
 }
-  // 🔥 الدالة لطلب الإذن وتهيئة الكاميرا
-  Future<void> _requestPermissionAndInitializeCamera() async {
-    var status = await Permission.camera.request();
-    
-    if (status.isGranted) {
-      setState(() {
-        _hasCameraPermission = true;
-      });
-      
-      if (widget.cameras.isNotEmpty) {
-        _controller = CameraController(
-          widget.cameras.first, 
-          ResolutionPreset.high, 
-        );
-
-        _initializeControllerFuture = _controller.initialize().then((_) {
-          if (!mounted) return;
-          setState(() {
-            _isCameraReady = true;
-          });
-        }).catchError((e) {
-          print("Camera Initialization Error: $e");
-          setState(() {
-            _isCameraReady = false;
-          });
-        });
-      }
-    } else {
-        setState(() {
-            _hasCameraPermission = false;
-        });
+  // 🔥 الدالة لطلب الإذن وتهيئة الكاميرا// ✅ التعديل الذي يجب وضعه (مع إضافة منطق القفل والفتح)
+Future<void> _requestPermissionAndInitializeCamera() async {
+    // 1. القفل: التحقق مما إذا كان طلب الإذن قيد التنفيذ بالفعل
+    if (_isPermissionRequesting) {
+        return;
     }
-  }
+    
+    // 2. تعيين الحالة على "جاري الطلب" وعرضها على الواجهة
+    if(mounted) {
+       setState(() {
+            _isPermissionRequesting = true;
+       });
+    }
+
+    try {
+        // 3. تنفيذ طلب الإذن
+        var status = await Permission.camera.request();
+        
+        if (status.isGranted) {
+            setState(() {
+                _hasCameraPermission = true;
+            });
+            
+            if (widget.cameras.isNotEmpty) {
+                _controller = CameraController(
+                    widget.cameras.first, 
+                    ResolutionPreset.high, 
+                );
+
+                _initializeControllerFuture = _controller.initialize().then((_) {
+                    if (!mounted) return;
+                    setState(() {
+                        _isCameraReady = true;
+                    });
+                }).catchError((e) {
+                    print("Camera Initialization Error: $e");
+                    setState(() {
+                        _isCameraReady = false;
+                    });
+                });
+            }
+        } else {
+            setState(() {
+                _hasCameraPermission = false;
+            });
+        }
+    } catch (e) {
+        print("Error during permission request: $e");
+    } finally {
+        // 4. فتح القفل: إعادة تعيين الحالة بعد الانتهاء
+        if (mounted) {
+            setState(() {
+                _isPermissionRequesting = false;
+            });
+        }
+    }
+}
 
   @override
   void dispose() {
@@ -249,18 +277,45 @@ Widget _buildPermissionDeniedWidget(Size media) {
                     style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
-                RoundGradientButton(
-                    title: "طلب الإذن/فتح الإعدادات", 
-                    onPressed: () async {
-                       var status = await Permission.camera.status;
-                       if (status.isPermanentlyDenied) {
-                          openAppSettings(); 
-                       } else {
-                          _requestPermissionAndInitializeCamera();
-                       }
-                    },
-                )
+                // ✅ التعديل الذي يجب وضعه (استبدال RoundGradientButton بالكامل)
+InkWell(
+    // 💡 الآن يمكننا تمرير null بأمان
+    onTap: _isPermissionRequesting ? null : () {
+        // نستخدم الدالة غير المتزامنة هنا كما تعلمنا
+        () async {
+            var status = await Permission.camera.status;
+            if (status.isPermanentlyDenied) {
+                await launchUrl(Uri.parse('app-settings:'), mode: LaunchMode.platformDefault); 
+            } else {
+                await _requestPermissionAndInitializeCamera();
+            }
+        }();
+    },
+    child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 25),
+        // استخدام نفس تدرج الألوان (Gradients)
+        decoration: BoxDecoration(
+            gradient: LinearGradient(colors: AppColors.primaryG),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: _isPermissionRequesting ? null : const [
+                BoxShadow(
+                    color: Colors.black26, 
+                    blurRadius: 10, 
+                    offset: Offset(0, 4)
+                ),
             ],
+        ),
+        alignment: Alignment.center,
+        child: Text(
+            _isPermissionRequesting ? "جارٍ الطلب..." : "طلب الإذن/فتح الإعدادات",
+            style: TextStyle(
+                color: AppColors.whiteColor,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+            ),
+        ),
+    ),
+)],
         ),
     );
 }
