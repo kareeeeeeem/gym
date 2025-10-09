@@ -47,6 +47,18 @@ dependencies:
   url_launcher: ^6.3.2
   image_picker: ^1.2.0
 
+  onesignal_flutter: ^5.3.4
+
+  shared_preferences: ^2.5.3
+  
+  animate_do: ^4.2.0
+
+  vibration: ^3.1.4
+
+  badges: ^3.1.2
+
+
+
 
 
 dev_dependencies:

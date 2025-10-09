@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "1011533277601",
-    "project_id": "egouser-d77d2",
-    "storage_bucket": "egouser-d77d2.firebasestorage.app"
+    "project_number": "586180299581",
+    "project_id": "egogym-aad03",
+    "storage_bucket": "egogym-aad03.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1011533277601:android:2fb6da23fef429ff1c03e0",
+        "mobilesdk_app_id": "1:586180299581:android:12e2698112f7d6d53dd354",
         "android_client_info": {
           "package_name": "com.example.ego"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDfqwJDi1z5sasLrhDKDwRxp4azh6jivik"
+          "current_key": "AIzaSyAp5t-LGjpPeCL-_LlO-1YUd9ce_faKXKk"
         }
       ],
       "services": {

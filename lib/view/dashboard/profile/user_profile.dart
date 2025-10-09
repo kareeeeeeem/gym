@@ -1,13 +1,12 @@
-import 'package:animated_toggle_switch/animated_toggle_switch.dart';
+import 'package:fitnessapp/view/dashboard/profile/sendNotifiactions.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; 
-import 'package:firebase_core/firebase_core.dart'; 
-import 'dart:async'; 
+// 💡 يجب عليك إضافة حزمة 'url_launcher' في pubspec.yaml لتشغيل الروابط
+import 'package:url_launcher/url_launcher.dart'; 
 
 // =========================================================================
-// 1. Color Definitions (AppColors) - Unified Dark Theme
+// 1. Color Definitions (AppColors)
 // =========================================================================
 
 class AppColors {
@@ -29,12 +28,10 @@ class AppColors {
     Color(0xFFC58BF2), 
     Color(0xFFEEA4CE),
   ];
-  
-  static const Color grayColor = Color(0xFF7B6F72); 
 }
 
 // =========================================================================
-// 2. Core Widgets Definitions (بدون تغيير)
+// 2. Core Widgets Definitions
 // =========================================================================
 
 enum RoundButtonType { primaryBG, secondaryBG }
@@ -57,6 +54,7 @@ class RoundButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ... (Button UI remains the same)
     return Container(
       width: width,
       height: height,
@@ -93,11 +91,10 @@ class RoundButton extends StatelessWidget {
 }
 
 class TitleSubtitleCell extends StatelessWidget {
+  // ... (TitleSubtitleCell remains the same) ...
   final String title;
   final String subtitle;
-
   const TitleSubtitleCell({super.key, required this.title, required this.subtitle});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -108,19 +105,14 @@ class TitleSubtitleCell extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(
-            title, 
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.accentColor) 
-          ),
-          Text(
-            subtitle, 
-            style: const TextStyle(fontSize: 12, color: AppColors.darkGrayColor) 
-          ),
+          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.accentColor)),
+          Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.darkGrayColor)),
         ],
       ),
     );
   }
 }
+
 
 class EditInputField extends StatelessWidget {
   final String label;
@@ -213,12 +205,12 @@ class ContentRow extends StatelessWidget {
 }
 
 class SettingRow extends StatelessWidget {
-  final String icon;
+  final IconData iconData; 
   final String title;
   final VoidCallback? onPressed;
   final Widget? trailing; 
 
-  const SettingRow({Key? key, required this.icon, required this.title, required this.onPressed, this.trailing}) : super(key: key);
+  const SettingRow({Key? key, required this.iconData, required this.title, required this.onPressed, this.trailing}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -230,7 +222,7 @@ class SettingRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
-              title == "Add Admins" ? Icons.security : Icons.settings, 
+              iconData, 
               size: 20, 
               color: AppColors.primaryColor
             ),
@@ -254,7 +246,7 @@ class SettingRow extends StatelessWidget {
 }
 
 // =========================================================================
-// 3. Edit and List Screens (بدون تغيير)
+// 3. PlaceholderPage (Crucial for Scrolling)
 // =========================================================================
 
 class PlaceholderPage extends StatelessWidget {
@@ -262,6 +254,7 @@ class PlaceholderPage extends StatelessWidget {
   final Widget content;
   const PlaceholderPage({super.key, required this.title, required this.content});
 
+  // ✅ تم التأكد من استخدام SingleChildScrollView لتمكين التمرير في جميع الصفحات
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -272,7 +265,7 @@ class PlaceholderPage extends StatelessWidget {
         iconTheme: const IconThemeData(color: AppColors.whiteColor), 
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: SingleChildScrollView( // 💡 هذا يضمن التمرير
         padding: const EdgeInsets.all(25),
         child: content,
       ),
@@ -304,12 +297,12 @@ class PersonalDataView extends StatelessWidget {
           const SizedBox(height: 20),
           ContentRow(label: "Full Name", value: userData['fullName'] ?? "N/A"),
           ContentRow(label: "Email", value: userData['email'] ?? "N/A"),
-          ContentRow(label: "Date of Birth", value: userData['dob'] ?? "N/A"),
+          // ContentRow(label: "Date of Birth", value: userData['dob'] ?? "N/A"),
           ContentRow(label: "Gender", value: userData['gender'] ?? "N/A"),
-          ContentRow(label: "Goal", value: userData['goal'] ?? "N/A"),
-          ContentRow(label: "Height (cm)", value: userData['height'] ?? "N/A"),
-          ContentRow(label: "Weight (kg)", value: userData['weight'] ?? "N/A"),
-          ContentRow(label: "Age (years)", value: userData['age'] ?? "N/A"),
+          // ContentRow(label: "Goal", value: userData['goal'] ?? "N/A"),
+          // ContentRow(label: "Height (cm)", value: userData['height'] ?? "N/A"),
+          // ContentRow(label: "Weight (kg)", value: userData['weight'] ?? "N/A"),
+          // ContentRow(label: "Age (years)", value: userData['age'] ?? "N/A"),
           const SizedBox(height: 30),
           RoundButton(
             title: "Edit Personal Data",
@@ -389,7 +382,7 @@ class _EditPersonalDataViewState extends State<EditPersonalDataView> {
 
     widget.onSave(updatedData);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Data saved successfully.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ البيانات بنجاح.')));
       Navigator.pop(context);
     }
   }
@@ -405,13 +398,14 @@ class _EditPersonalDataViewState extends State<EditPersonalDataView> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
           const SizedBox(height: 20),
           EditInputField(label: "Full Name", controller: _nameController),
-          EditInputField(label: "Email", controller: _emailController, keyboardType: TextInputType.emailAddress),
-          EditInputField(label: "Date of Birth (DD/MM/YYYY)", controller: _dobController, keyboardType: TextInputType.datetime),
-          EditInputField(label: "Gender", controller: _genderController),
-          EditInputField(label: "Goal", controller: _goalController),
-          EditInputField(label: "Height (cm)", controller: _heightController, keyboardType: TextInputType.number),
-          EditInputField(label: "Weight (kg)", controller: _weightController, keyboardType: TextInputType.number),
-          EditInputField(label: "Age (years)", controller: _ageController, keyboardType: TextInputType.number),
+          // 💡 لاحظ أن الإيميل هنا قابل للتعديل ولكنه يتطلب إعادة مصادقة في Firebase Auth لتحديثه كإيميل رئيسي
+          EditInputField(label: "Email", controller: _emailController, keyboardType: TextInputType.emailAddress), 
+          // EditInputField(label: "Date of Birth (DD/MM/YYYY)", controller: _dobController, keyboardType: TextInputType.datetime),
+          // EditInputField(label: "Gender", controller: _genderController),
+          // EditInputField(label: "Goal", controller: _goalController),
+          // EditInputField(label: "Height (cm)", controller: _heightController, keyboardType: TextInputType.number),
+          // EditInputField(label: "Weight (kg)", controller: _weightController, keyboardType: TextInputType.number),
+          // EditInputField(label: "Age (years)", controller: _ageController, keyboardType: TextInputType.number),
           const SizedBox(height: 30),
           RoundButton(
             title: "Save Changes",
@@ -427,23 +421,23 @@ class _EditPersonalDataViewState extends State<EditPersonalDataView> {
 class AchievementView extends StatelessWidget {
   const AchievementView({super.key});
   @override
-  Widget build(BuildContext context) => PlaceholderPage(
+  Widget build(BuildContext context) => const PlaceholderPage(
     title: "Achievements",
     content: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Your fitness milestones:', 
+        Text('Your fitness milestones:', 
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
-        const SizedBox(height: 20),
+        SizedBox(height: 20),
         ContentRow(label: "Current Streak", value: "🔥 14 Days"),
         ContentRow(label: "Total Workouts", value: "115 Workouts"),
         ContentRow(label: "Best Weight Loss", value: "5 kg in 1 Month"),
-        const SizedBox(height: 20),
-        const Text("Badges Earned:", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.whiteColor)),
-        const SizedBox(height: 10),
+        SizedBox(height: 20),
+        Text("Badges Earned:", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.whiteColor)),
+        SizedBox(height: 10),
         Wrap( 
           spacing: 10,
-          children: const [
+          children: [
             Chip(label: Text("Beginner 💪", style: TextStyle(color: AppColors.blackColor)), backgroundColor: AppColors.accentColor),
             Chip(label: Text("Consistency ⭐", style: TextStyle(color: AppColors.blackColor)), backgroundColor: AppColors.primaryColor),
             Chip(label: Text("Marathon Runner 🏃", style: TextStyle(color: AppColors.blackColor)), backgroundColor: AppColors.primaryColor),
@@ -455,14 +449,18 @@ class AchievementView extends StatelessWidget {
 }
 
 class SettingView extends StatefulWidget {
-  final VoidCallback onLogout;
-  const SettingView({super.key, required this.onLogout});
+  final VoidCallback onLogout;  
+  final bool isAdmin; 
+
+  const SettingView({super.key, required this.onLogout, required this.isAdmin});
+  
 
   @override
   State<SettingView> createState() => _SettingViewState();
 }
 
 class _SettingViewState extends State<SettingView> {
+  // ... (Logic remains the same, relies on PlaceholderPage scrolling) ...
   bool _darkModeEnabled = true; 
 
   void _showInternalSnackbar(BuildContext context, String action) {
@@ -478,52 +476,30 @@ class _SettingViewState extends State<SettingView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text("General:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
-        SettingRow(
-          icon: "assets/icons/p_language.png", 
-          title: "Language", 
-          onPressed: () => _showInternalSnackbar(context, "Language")
-        ),
-        SettingRow(
-          icon: "assets/icons/p_unit.png", 
-          title: "Unit Preference (Kg/Lbs)", 
-          onPressed: () => _showInternalSnackbar(context, "Unit Preference")
-        ),
-        SettingRow(
-          icon: "assets/icons/p_theme.png", 
-          title: "Dark Mode", 
-          onPressed: () {
-             setState(() {
-                _darkModeEnabled = !_darkModeEnabled;
-             });
-             _showInternalSnackbar(context, "Dark Mode: ${_darkModeEnabled ? 'Enabled' : 'Disabled'}");
-          },
-          trailing: Switch(
-            value: _darkModeEnabled,
-            onChanged: (val) {
-              setState(() {
-                _darkModeEnabled = val;
-              });
-              _showInternalSnackbar(context, "Dark Mode: ${val ? 'Enabled' : 'Disabled'}");
-            },
-            activeColor: AppColors.accentColor, 
-            inactiveThumbColor: AppColors.darkGrayColor,
-            inactiveTrackColor: AppColors.cardBackgroundColor,
-          ),
-        ),
         const SizedBox(height: 30),
         const Text("Security:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
+        
+        if (widget.isAdmin) 
+            SettingRow(
+              iconData: Icons.security, 
+              title: "Manage Admins", 
+              onPressed: () {
+                // ✅ التوجيه إلى شاشة إدارة المدراء
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageAdminsView()));
+              }
+            ),
         SettingRow(
-          icon: "assets/icons/p_password.png",
+          iconData: Icons.lock, 
           title: "Change Password",
           onPressed: () {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePasswordView()));
           }
         ),
-        SettingRow(
-          icon: "assets/icons/p_fingerprint.png", 
-          title: "Enable Biometrics", 
-          onPressed: () => _showInternalSnackbar(context, "Enable Biometrics")
-        ),
+        // SettingRow(
+        //   iconData: Icons.fingerprint, 
+        //   title: "Enable Biometrics", 
+        //   onPressed: () => _showInternalSnackbar(context, "Enable Biometrics")
+        // ),
         const SizedBox(height: 30),
         RoundButton(title: "Logout", type: RoundButtonType.secondaryBG, onPressed: widget.onLogout),
       ],
@@ -532,7 +508,7 @@ class _SettingViewState extends State<SettingView> {
 }
 
 // =========================================================================
-// 4. ChangePasswordView (بدون تغيير)
+// 4. ChangePasswordView
 // =========================================================================
 
 class ChangePasswordView extends StatefulWidget {
@@ -557,12 +533,16 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
   
   void _updatePassword() async {
     final user = FirebaseAuth.instance.currentUser;
+    print('DEBUG_PASSWORD: Attempting to update password.');
+
     if (user == null || user.email == null) {
+      print('DEBUG_PASSWORD: User is null or email is missing.');
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ المستخدم غير مسجل الدخول أو البريد غير متوفر.')));
       return;
     }
     
     if (_newPasswordController.text.trim() != _confirmPasswordController.text.trim()) {
+      print('DEBUG_PASSWORD: New passwords do not match.');
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ كلمة المرور الجديدة وتأكيدها غير متطابقتين.')));
       return;
     }
@@ -571,40 +551,41 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
     final String newPassword = _newPasswordController.text.trim();
     
     if (newPassword.length < 6) {
+      print('DEBUG_PASSWORD: New password too short.');
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل.')));
       return;
     }
 
 
     try {
-      // 1. إعادة المصادقة (Re-authentication) لأمان Firebase
+      print('DEBUG_PASSWORD: Re-authenticating user: ${user.email}');
       AuthCredential credential = EmailAuthProvider.credential(
         email: user.email!, 
         password: currentPassword
       );
       
       await user.reauthenticateWithCredential(credential);
-
-      // 2. تحديث كلمة المرور
+      print('DEBUG_PASSWORD: Re-authentication successful. Updating password...');
       await user.updatePassword(newPassword);
 
+      print('DEBUG_PASSWORD: Password updated successfully.');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم تحديث كلمة المرور بنجاح!')));
         Navigator.pop(context); 
       }
 
     } on FirebaseAuthException catch (e) {
+      print('DEBUG_PASSWORD: FirebaseAuthException: ${e.code} - ${e.message}');
       String errorMessage = 'حدث خطأ غير معروف.';
       if (e.code == 'wrong-password' || e.code == 'user-not-found') {
         errorMessage = '❌ كلمة المرور الحالية غير صحيحة.';
       } else if (e.code == 'requires-recent-login') {
         errorMessage = '❌ لأسباب أمنية، يجب إعادة تسجيل الدخول (تسجيل خروج ثم دخول) قبل محاولة تغيير كلمة المرور.';
       }
-      print("Password Update Error: ${e.code}");
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
       
     } catch (e) {
-       print("Generic Password Update Error: $e");
+      print('DEBUG_PASSWORD: General Error: $e');
        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ فشل التحديث. تأكد من أنك متصل بالإنترنت.')));
     }
   }
@@ -634,120 +615,237 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
 }
 
 // =========================================================================
-// 5. AddAdminsView (تحديث بالمنطق الحقيقي Firestore)
+// 5. ManageAdminsView (RE-DESIGNED & FIXED)
 // =========================================================================
-class AddAdminsView extends StatelessWidget {
-  const AddAdminsView({super.key});
 
-  // 📌 هذه الدالة هي الآن حقيقية وتُعدّل Firestore
-  void _setAdminRole(BuildContext context, String email) async {
-    final trimmedEmail = email.trim().toLowerCase();
-    if (trimmedEmail.isEmpty || !trimmedEmail.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ يرجى إدخال بريد إلكتروني صالح.')),
-      );
+class ManageAdminsView extends StatefulWidget {
+  const ManageAdminsView({super.key});
+
+  @override
+  State<ManageAdminsView> createState() => _ManageAdminsViewState();
+}
+
+class _ManageAdminsViewState extends State<ManageAdminsView> {
+  final TextEditingController _emailController = TextEditingController();
+  bool _isLoadingAction = false;
+  final currentUserEmail = FirebaseAuth.instance.currentUser?.email?.toLowerCase();
+  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+  void _showSnackbar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  // 1. Function to find user by email and toggle admin status
+  void _toggleAdminRole(bool makeAdmin) async {
+    final email = _emailController.text.trim().toLowerCase();
+    print('DEBUG_ADMIN: Attempting to toggle role for email: $email, makeAdmin: $makeAdmin');
+
+    if (email.isEmpty || !email.contains('@')) {
+      _showSnackbar('❌ يرجى إدخال بريد إلكتروني صحيح.');
+      print('DEBUG_ADMIN: Invalid email format.');
       return;
     }
-    
-    // 1. البحث عن المستخدم في Firestore بواسطة الإيميل (يتطلب index في Firestore)
+
+    // Protection against modifying current user's role
+    if (email == currentUserEmail) {
+      _showSnackbar('❌ لا يمكنك تعديل صلاحياتك كـ Admin عبر هذه الشاشة. أنت الأدمن الأصلي.');
+      print('DEBUG_ADMIN: Attempt to modify current user\'s role blocked.');
+      return;
+    }
+
+    setState(() => _isLoadingAction = true);
+
     try {
-      final QuerySnapshot result = await FirebaseFirestore.instance
+      // 1. Search for user by email (Requires creating an index in Firestore console)
+      print('DEBUG_ADMIN: Searching for user document by email...');
+      final querySnapshot = await FirebaseFirestore.instance
           .collection('users')
-          .where('email', isEqualTo: trimmedEmail) // افتراض وجود حقل 'email'
+          .where('email', isEqualTo: email)
           .limit(1)
           .get();
 
-      if (result.docs.isEmpty) {
-        if (context.mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('❌ المستخدم ($trimmedEmail) غير موجود في قاعدة البيانات.')),
-           );
-        }
+      if (querySnapshot.docs.isEmpty) {
+        _showSnackbar('❌ لم يتم العثور على مستخدم مسجل بهذا الإيميل: $email. تأكد من أن المستخدم قام بتسجيل الدخول مرة واحدة على الأقل وأن الإيميل مسجل في Firestore.');
+        print('DEBUG_ADMIN: User document not found for email: $email');
         return;
       }
-      
-      final docId = result.docs.first.id;
 
-      // 2. تحديث وثيقة المستخدم لجعله مديراً
-      await FirebaseFirestore.instance.collection('users').doc(docId).update({
-        'isAdmin': true, // تعيين الدور
-        'adminAssignedBy': FirebaseAuth.instance.currentUser?.email ?? 'Unknown Admin', // تسجيل من قام بالتعيين
-      });
-      
-      if (context.mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('✅ تم بنجاح تعيين $trimmedEmail كمدير!')),
-         );
-      }
+      final userId = querySnapshot.docs.first.id;
+      final existingData = querySnapshot.docs.first.data();
+      print('DEBUG_ADMIN: User found. UID: $userId, Current isAdmin status: ${existingData['isAdmin']}');
+
+      // 2. Update the role
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'isAdmin': makeAdmin,
+        'adminAssignedBy': makeAdmin
+            ? currentUserEmail ?? 'Unknown Admin'
+            : FieldValue.delete(), // حذف الحقل عند إزالة الصلاحية
+        'email': email, // تأكيد وجود الإيميل في الحقل
+      }, SetOptions(merge: true));
+
+      print('DEBUG_ADMIN: Firestore update successful.');
+
+      String action = makeAdmin ? 'تعيين' : 'إزالة صلاحيات';
+      _showSnackbar('✅ تم $action المستخدم $email بنجاح! قد تحتاج بضع ثوانٍ لتحديث القائمة.');
+      _emailController.clear();
+      setState(() {}); 
 
     } on FirebaseException catch (e) {
-      print("Firestore Error setting admin: $e");
-      if (context.mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('❌ فشل تعيين المدير: ${e.message}')),
-         );
-      }
+      _showSnackbar('❌ فشل العملية: ${e.message}');
+      print('DEBUG_ADMIN: FirebaseException: ${e.code} - ${e.message}');
     } catch (e) {
-      print("Generic Error setting admin: $e");
-      if (context.mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('❌ حدث خطأ غير متوقع أثناء تعيين المدير.')),
-         );
-      }
+      _showSnackbar('❌ حدث خطأ غير متوقع: $e');
+      print('DEBUG_ADMIN: General Error: $e');
+    } finally {
+      setState(() => _isLoadingAction = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final TextEditingController emailController = TextEditingController();
-    
     return PlaceholderPage(
-      title: "Add Admins",
+      title: "Manage Admins",
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'قم بإدخال البريد الإلكتروني للمستخدم الذي تريد تعيينه كـ "مدير" (Admin). يجب أن يكون المستخدم مسجلاً بالفعل:', 
+           'make and remofe Admins',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.whiteColor)
           ),
           const SizedBox(height: 20),
+          
+          // Input Field
           EditInputField(
-            label: "User Email", 
-            controller: emailController,
+            label: "Enter user email to set/remove permission Admin",
+            controller: _emailController,
             keyboardType: TextInputType.emailAddress,
           ),
-          const SizedBox(height: 30),
-          RoundButton(
-            title: "Grant Admin Access",
-            type: RoundButtonType.secondaryBG,
-            onPressed: () {
-              _setAdminRole(context, emailController.text);
+          const SizedBox(height: 15),
+          
+          // Action Buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: RoundButton(
+                  title: _isLoadingAction ? 'Currently Hiring...' : "set Admin",
+                  type: RoundButtonType.primaryBG,
+                  onPressed: _isLoadingAction ? null : () => _toggleAdminRole(true),
+                  height: 45,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: RoundButton(
+                  title: _isLoadingAction ? 'Removing...' : "Remove ",
+                  type: RoundButtonType.secondaryBG,
+                  onPressed: _isLoadingAction ? null : () => _toggleAdminRole(false),
+                  height: 45,
+                ),
+              ),
+            ],
+          ),
+          
+          const Divider(color: AppColors.lightGrayColor, height: 40),
+          
+          // List of current Admins
+          const Text('List of current Admins:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.primaryColor)),
+          const SizedBox(height: 15),
+          
+          StreamBuilder<QuerySnapshot>(
+            // 💡 StreamBuilder لعرض المدراء فقط (isAdmin == true)
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .where('isAdmin', isEqualTo: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: AppColors.accentColor));
+              }
+              if (snapshot.hasError) {
+                print('DEBUG_ADMIN_LIST: Error loading admins: ${snapshot.error}');
+                return Text('خطأ في جلب القائمة: ${snapshot.error}', style: const TextStyle(color: AppColors.redColor));
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Text('لا يوجد مدراء حالياً.', style: TextStyle(color: AppColors.darkGrayColor));
+              }
+
+              final admins = snapshot.data!.docs;
+              print('DEBUG_ADMIN_LIST: ${admins.length} admins loaded.');
+
+              return ListView.builder(
+                // ✅ ضروري ليعمل داخل SingleChildScrollView
+                physics: const NeverScrollableScrollPhysics(), 
+                shrinkWrap: true,
+                itemCount: admins.length,
+                itemBuilder: (context, index) {
+                  final adminDoc = admins[index];
+                  final adminData = adminDoc.data() as Map<String, dynamic>;
+                  // 💡 FIX: نعتمد على الإيميل من Firestore كأولوية، ونرجع للـ ID في حالة الضرورة القصوى فقط
+                  final email = adminData['email']?.toString() ?? 'No Email (UID: ${adminDoc.id})'; 
+                  final isCurrentUser = adminDoc.id == currentUserId;
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: ContentRow(
+                      label: isCurrentUser ? 'You are the current admin)' : 'ِ Admin number ${index + 1}',
+                      value: email,
+                      // منع الضغط على الصف الخاص بالأدمن الحالي
+                      onTap: isCurrentUser ? () => _showSnackbar('You cannot delete your permissions as Admin.') : null, 
+                    ),
+                  );
+                },
+              );
             },
           ),
+          const SizedBox(height: 50),
         ],
       ),
     );
   }
 }
 
-// 6. ContactUsView (بدون تغيير)
+// =========================================================================
+// 6. Link Launching Function (FIXED)
+// =========================================================================
+
+// ✅ الدالة الصحيحة لتشغيل الروابط
+void _showLinkAction(BuildContext context, String linkType, String url) async {
+    print('DEBUG_LINK: Attempting to launch $linkType with URL: $url');
+    // 💡 يجب إضافة حزمة 'url_launcher' في pubspec.yaml وتنفيذ flutter pub get
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        print('DEBUG_LINK: Launch successful.');
+      } else {
+         if (context.mounted) {
+             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ فشل فتح الرابط ($linkType). تأكد من صلاحية الرابط: $url')));
+         }
+         print('DEBUG_LINK: Cannot launch URL.');
+      }
+    } catch (e) {
+       if (context.mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ حدث خطأ غير متوقع أثناء فتح الرابط.')));
+       }
+       print('DEBUG_LINK: General Error during launch: $e');
+    }
+}
+
 class ContactUsView extends StatelessWidget {
+  // ... (Constants remain the same) ...
   static const String gymSlogan = "Get strong with us! Your journey begins now. 💪🌟";
-  static const String gymWhatsApp = "+20 100 5235831";
-  static const String gymPhone = "010 05235831";
+  static const String gymWhatsApp = "01005235831"; 
+  static const String gymPhone = "01005235831";
   static const String gymEmail = "egogym.banha@gmail.com";
   static const String gymFacebook = "@egoo.gym (4.4k followers)";
-  static const String gymPriceRange = "Medium (\$\$\$ - Recommended)";
   static const String gymLocationAddress = "Street 2, Qism Banha, Second Banha, Before Al-Fahs Bridge in front of Othaim Ego Gym, Benha, Egypt";
   static const String gymLocationLink = "https://bit.ly/egogym-location";
 
   const ContactUsView({super.key});
 
-  void _showLinkAction(BuildContext context, String linkType) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Simulating opening $linkType link...')),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -758,35 +856,34 @@ class ContactUsView extends StatelessWidget {
         children: [
           const Text('Gym Information:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
           const SizedBox(height: 10),
-          Text(
+          const Text(
             gymSlogan,
-            style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: AppColors.accentColor), 
+            style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: AppColors.accentColor), 
           ),
           const Divider(color: AppColors.lightGrayColor, height: 30),
           
           const Text('Contact Details:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
           const SizedBox(height: 10),
-          ContentRow(label: "WhatsApp", value: gymWhatsApp, onTap: () => _showLinkAction(context, "WhatsApp")),
-          ContentRow(label: "Phone", value: gymPhone, onTap: () => _showLinkAction(context, "Phone Call")),
-          ContentRow(label: "Email", value: gymEmail, onTap: () => _showLinkAction(context, "Email")),
-          ContentRow(label: "Facebook Handle", value: gymFacebook, onTap: () => _showLinkAction(context, "Facebook")),
+          ContentRow(
+            label: "WhatsApp", 
+            value: gymWhatsApp, 
+            onTap: () => _showLinkAction(context, "WhatsApp", "whatsapp://send?phone=+2${gymWhatsApp.replaceAll(' ', '')}") 
+          ),
+          ContentRow(label: "Phone", value: gymPhone, onTap: () => _showLinkAction(context, "Phone Call", "tel:$gymPhone")),
+          ContentRow(label: "Email", value: gymEmail, onTap: () => _showLinkAction(context, "Email", "mailto:$gymEmail")),
+          ContentRow(label: "Facebook Handle", value: gymFacebook, onTap: () => _showLinkAction(context, "Facebook", "https://facebook.com/egoo.gym")),
           const Divider(color: AppColors.lightGrayColor, height: 30),
 
           const Text('Location:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
           const SizedBox(height: 10),
-          ContentRow(label: "Address", value: gymLocationAddress),
-          ContentRow(label: "Google Maps Link", value: gymLocationLink, onTap: () => _showLinkAction(context, "Google Maps")),
-          const Divider(color: AppColors.lightGrayColor, height: 30),
-
-          const Text('Pricing:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
-          const SizedBox(height: 10),
-          ContentRow(label: "Price Range", value: gymPriceRange),
+          const ContentRow(label: "Address", value: gymLocationAddress),
+          ContentRow(label: "Google Maps Link", value: "Open Location", onTap: () => _showLinkAction(context, "Google Maps", gymLocationLink)),
           const SizedBox(height: 30),
           
           RoundButton(
-            title: "Visit Gym Location (Simulated)",
+            title: "Visit Gym Location",
             type: RoundButtonType.primaryBG,
-            onPressed: () => _showLinkAction(context, "Gym Location"),
+            onPressed: () => _showLinkAction(context, "Gym Location", gymLocationLink),
           ),
         ],
       ),
@@ -795,7 +892,75 @@ class ContactUsView extends StatelessWidget {
 }
 
 // =========================================================================
-// 7. UserProfile Code (تحديث بمنطق Firestore الحقيقي)
+// 7. HowUsView (About the Developer - Kareem Emad)
+// =========================================================================
+class HowUsView extends StatelessWidget {
+  // ... (Constants remain the same) ...
+  static const String developerName = " kareem emad";
+  static const String developerTitle = "developer";
+  static const String devEmail = "kareememad852@gmail.com"; 
+  static const String devPhone = "01554327428"; 
+  static const String devLinkedIn = "linkedin.com/in/kareem emad 651893219"; 
+  static const String devGitHub = "github.com/karecccceem"; 
+  static const String devBehance = "behance.net/kareememad15"; 
+  
+  @override
+  Widget build(BuildContext context) {
+    return PlaceholderPage(
+      title: "About the Developer (How Us)",
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+               CircleAvatar(
+                radius: 30,
+                backgroundColor: AppColors.accentColor,
+                child: Text('KE', style: const TextStyle(fontSize: 24, color: AppColors.blackColor, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 15),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(developerName, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.whiteColor)),
+                  const Text(developerTitle, style: TextStyle(fontSize: 14, color: AppColors.primaryColor)),
+                ],
+              ),
+            ],
+          ),
+          const Divider(color: AppColors.lightGrayColor, height: 30),
+          
+          const Text('Professional Summary:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
+          const SizedBox(height: 10),
+          const Text(
+           '',
+            style: TextStyle(fontSize: 14, color: AppColors.darkGrayColor),
+          ),
+          
+          const Divider(color: AppColors.lightGrayColor, height: 30),
+
+          const Text('Contact & Portfolio:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
+          const SizedBox(height: 10),
+          ContentRow(label: "Email", value: devEmail, onTap: () => _showLinkAction(context, "Email", "mailto:$devEmail")),
+          ContentRow(label: "Phone", value: devPhone, onTap: () => _showLinkAction(context, "Phone Call", "tel:$devPhone")),
+          ContentRow(label: "LinkedIn", value: "Open Profile", onTap: () => _showLinkAction(context, "LinkedIn", "https://$devLinkedIn")),
+          ContentRow(label: "GitHub", value: "View Repos", onTap: () => _showLinkAction(context, "GitHub", "https://$devGitHub")),
+          ContentRow(label: "Behance (Design)", value: "View Projects", onTap: () => _showLinkAction(context, "Behance", "https://$devBehance")),
+
+          const SizedBox(height: 30),
+          RoundButton(
+            title: "Hire for Mobile/Web Development",
+            type: RoundButtonType.primaryBG,
+            onPressed: () => _showLinkAction(context, "Email", "mailto:$devEmail"),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =========================================================================
+// 8. UserProfile Code (Final Fixes and Data Loading - FIXED)
 // =========================================================================
 
 class UserProfile extends StatefulWidget {
@@ -806,18 +971,10 @@ class UserProfile extends StatefulWidget {
 }
 
 class _UserProfileState extends State<UserProfile> {
-  // 📌 قائمة اختبار لمدراء التطوير (يمكن حذفها بعد النشر)
-  final List<String> _developerAdmins = const [
-      "admin@example.com",     
-      "micohelmy5@gmail.com", // ✅ تم وضع بريدك هنا
-
-  ];
   
   bool _isAdmin = false; 
-
-  bool positive = false;
   String _fullName = "Loading...";
-  String _goal = "Loading...";
+  String _goal = "---";
   String _height = "---";
   String _weight = "---";
   String _age = "---";
@@ -833,28 +990,28 @@ class _UserProfileState extends State<UserProfile> {
   }
 
   void _logout() async {
+    print('DEBUG_AUTH: Attempting to log out...');
     try {
       await FirebaseAuth.instance.signOut();
+      print('DEBUG_AUTH: Logout successful.');
       if (mounted) {
-        // يمكنك توجيه المستخدم لشاشة تسجيل الدخول بعد تسجيل الخروج
-        // Navigator.pushAndRemoveUntil(...) 
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Logged out successfully!")));
       }
     } catch (e) {
-      print("Logout Error: $e");
+      print('DEBUG_AUTH: Error during logout: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error during logout: $e")));
       }
     }
   }
-// 📌 التعديل: جلب حالة الأدمن والبيانات من Firestore بشكل أكثر دقة
 
-// 📌 النسخة المُعدلة لتتبع الأخطاء (Debug Console)
+// ✅ تم إصلاح مشكلة عدم جلب البيانات وضمان قراءة الإيميل 
 void _fetchUserData() async {
     final user = FirebaseAuth.instance.currentUser;
-    print("DEBUG 1: Starting _fetchUserData. User is: ${user != null ? 'Logged In' : 'NULL'}"); //
+    print('DEBUG_FETCH: Starting data fetch. User: ${user != null ? user.uid : "null"}');
 
     if (user == null) {
+      print('DEBUG_FETCH: Guest user detected.');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -865,42 +1022,63 @@ void _fetchUserData() async {
       return;
     }
 
-    final userEmail = user.email?.toLowerCase() ?? '';
-    print("DEBUG 2: Current User Email: $userEmail"); //
+    // 💡 استخدام إيميل Firebase Auth كقيمة افتراضية
+    final userEmail = user.email?.toLowerCase() ?? 'No Email (Auth)';
     
     try {
+      print('DEBUG_FETCH: Fetching user document from Firestore for UID: ${user.uid}');
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       
       String defaultName = user.displayName ?? userEmail.split('@')[0];
       Map<String, dynamic> data = userDoc.data() ?? {};
       
-      print("DEBUG 3: Firestore Document Exists: ${userDoc.exists}"); //
+      // دالة مساعدة لضمان قراءة البيانات بشكل آمن كـ String
+      String _readAsString(dynamic value, String defaultValue) {
+        if (value == null) return defaultValue;
+        return value.toString();
+      }
 
       if (mounted) {
         setState(() {
-          // ... (جلب البيانات الأخرى) ...
-          
-          // 💡 التحقق من الأدمن
+          // 💡 التحقق من الأدمن (يعتمد على Firestore فقط)
           bool isFirebaseAdmin = data['isAdmin'] as bool? ?? false; 
-          bool isDeveloperAdmin = _developerAdmins.contains(userEmail); 
+          _isAdmin = isFirebaseAdmin; 
           
-          _isAdmin = isFirebaseAdmin || isDeveloperAdmin; //
+          // ✅ جلب وتعبئة جميع البيانات الشخصية باستخدام الدالة الآمنة
+          _fullName = _readAsString(data['fullName'], defaultName);
+          _goal = _readAsString(data['goal'], '---');
+          _height = _readAsString(data['height'], '---');
+          _weight = _readAsString(data['weight'], '---');
+          _age = _readAsString(data['age'], '---');
+          _dob = _readAsString(data['dob'], '---');
+          _gender = _readAsString(data['gender'], '---');
           
-          print("DEBUG 4: isFirebaseAdmin (from Firestore): $isFirebaseAdmin"); //
-          print("DEBUG 5: isDeveloperAdmin (from local list): $isDeveloperAdmin"); //
-          print("DEBUG 6: Final _isAdmin value: $_isAdmin"); //
-          
+          // 💡 القيمة الأساسية للإيميل هي من Firestore، مع العودة إلى Firebase Auth كاحتياط
+          _email = _readAsString(data['email'], userEmail); 
+
           _isLoading = false;
+          print('DEBUG_FETCH: Data loaded successfully. IsAdmin: $_isAdmin, Email: $_email');
         });
       }
       
-    } catch (e) {
-      print("ERROR FETCHING DATA: $e"); //
+    } on FirebaseException catch (e) {
+      print('DEBUG_FETCH: Firestore Error: ${e.code} - ${e.message}');
       if (mounted) {
         setState(() {
           _isLoading = false;
           _fullName = user.displayName ?? userEmail.split('@')[0];
           _email = userEmail;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error loading data: ${e.message}')));
+        });
+      }
+    } catch (e) {
+       print('DEBUG_FETCH: General Error: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _fullName = user.displayName ?? userEmail.split('@')[0];
+          _email = userEmail;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error loading data: $e')));
         });
       }
     }
@@ -908,17 +1086,19 @@ void _fetchUserData() async {
 
   void _saveUserData(UserData updatedData) async {
     final user = FirebaseAuth.instance.currentUser;
+    print('DEBUG_SAVE: Starting data save. User: ${user != null ? user.uid : "null"}');
     if (user == null) {
-      print("Save Error: User not logged in.");
+      print('DEBUG_SAVE: Save failed - User is null.');
       return;
     }
     
-    // 📌 تحديث Firestore (Update Firestore)
     try {
+      print('DEBUG_SAVE: Updating Firestore document for UID: ${user.uid}');
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
-        updatedData, 
-        SetOptions(merge: true) // دمج البيانات مع ما هو موجود
+        updatedData.map((key, value) => MapEntry(key, value)), 
+        SetOptions(merge: true) 
       );
+      print('DEBUG_SAVE: Firestore update successful.');
       
       // تحديث الحالة المحلية
       if (mounted) {
@@ -933,10 +1113,17 @@ void _fetchUserData() async {
               _gender = updatedData['gender'] ?? _gender;
           });
       }
-      print("Data saved to Firestore successfully.");
       
+    } on FirebaseException catch (e) {
+      print('DEBUG_SAVE: Firestore Error: ${e.code} - ${e.message}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error saving data: ${e.message}')));
+      }
     } catch (e) {
-      print("Error saving user data: $e");
+      print('DEBUG_SAVE: General Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error saving data: $e')));
+      }
     }
   }
 
@@ -966,6 +1153,7 @@ void _fetchUserData() async {
       'age': _age,
     };
     
+    // ✅ تم جعل شاشة UserProfile تسمح بالتمرير
     return Scaffold(
       backgroundColor: AppColors.blackColor,
       appBar: AppBar(
@@ -974,7 +1162,7 @@ void _fetchUserData() async {
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.whiteColor),
       ),
-      body: SingleChildScrollView(
+      body: SingleChildScrollView( // 💡 هذا يضمن التمرير
         padding: const EdgeInsets.all(25),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -986,26 +1174,26 @@ void _fetchUserData() async {
               child: Text(_fullName.isNotEmpty ? _fullName[0] : 'U', style: const TextStyle(fontSize: 40, color: AppColors.accentColor)),
             ),
             const SizedBox(height: 10),
-            Text(_fullName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.whiteColor)),
+            Text(_fullName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.whiteColor)),
             Text(_email, style: const TextStyle(fontSize: 14, color: AppColors.darkGrayColor)),
             const SizedBox(height: 25),
 
             // Fitness Stats Card
-            Container(
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: AppColors.cardBackgroundColor,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  TitleSubtitleCell(title: "${_weight} kg", subtitle: "Weight"),
-                  TitleSubtitleCell(title: "${_height} cm", subtitle: "Height"),
-                  TitleSubtitleCell(title: "${_age} yrs", subtitle: "Age"),
-                ],
-              ),
-            ),
+            // Container(
+            //   padding: const EdgeInsets.all(15),
+            //   decoration: BoxDecoration(
+            //     color: AppColors.cardBackgroundColor,
+            //     borderRadius: BorderRadius.circular(15),
+            //   ),
+            //   child: Row(
+            //     mainAxisAlignment: MainAxisAlignment.spaceAround,
+            //     children: [
+            //       TitleSubtitleCell(title: "${_weight} kg", subtitle: "Weight"),
+            //       TitleSubtitleCell(title: "${_height} cm", subtitle: "Height"),
+            //       TitleSubtitleCell(title: "${_age} yrs", subtitle: "Age"),
+            //     ],
+            //   ),
+            // ),
             const SizedBox(height: 30),
 
             // Account List
@@ -1020,8 +1208,10 @@ void _fetchUserData() async {
                 children: [
                   const Text("Account", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
                   const Divider(color: AppColors.lightGrayColor, height: 20),
+                 
+                 
                   SettingRow(
-                    icon: "assets/icons/p_user.png",
+                    iconData: Icons.person, 
                     title: "Personal Data",
                     onPressed: () {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => PersonalDataView(
@@ -1030,26 +1220,28 @@ void _fetchUserData() async {
                       )));
                     }
                   ),
-                  SettingRow(
-                    icon: "assets/icons/p_achievement.png",
-                    title: "Achievements",
-                    onPressed: () {
-                       Navigator.push(context, MaterialPageRoute(builder: (context) => const AchievementView()));
-                    }
-                  ),
-                  // زر الأدمنز يظهر إذا كان المستخدم مديراً في Firestore أو في قائمة التطوير
-                 // ...
+                  // زر إدارة المدراء يظهر إذا كان المستخدم مديراً 
                   if (_isAdmin) 
                     SettingRow(
-                      // استبدل مسار الأيقونة بـ IconData مؤقت
-                      icon: "assets/icons/p_add_user.png", // ابقِ هذا السطر إذا كنت تريد استخدامه
-                      title: "Add Admins",
+                      iconData: Icons.security, 
+                      title: "Manage Admins",
                       onPressed: () {
-                         Navigator.push(context, MaterialPageRoute(builder: (context) => const AddAdminsView()));
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageAdminsView()));
                       },
-                      // 💡 التعديل: استخدم أيقونة مدمجة
                       trailing: const Icon(Icons.security, color: AppColors.redColor), 
                     ),
+
+                    if (_isAdmin) 
+                    SettingRow(
+                      iconData: Icons.notification_add, 
+                      title: "AdminNotificationScreen",
+                      onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminNotificationPage()));
+                      },
+                      trailing: const Icon(Icons.security, color: AppColors.redColor), 
+                    ),
+
+
                 ],
               ),
             ),
@@ -1068,23 +1260,31 @@ void _fetchUserData() async {
                   const Text("Notification & Settings", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
                   const Divider(color: AppColors.lightGrayColor, height: 20),
                   SettingRow(
-                    icon: "assets/icons/p_notification.png", 
+                    iconData: Icons.notifications, 
                     title: "Push Notifications", 
                     onPressed: () => _showInternalSnackbar(context, "Notifications Toggle"), 
                     trailing: Switch(value: true, onChanged: (val) { _showInternalSnackbar(context, "Notifications: ${val ? 'ON' : 'OFF'}"); }, activeColor: AppColors.accentColor),
                   ),
                   SettingRow(
-                    icon: "assets/icons/p_setting.png", 
+                    iconData: Icons.settings, 
                     title: "Settings", 
                     onPressed: () {
-                       Navigator.push(context, MaterialPageRoute(builder: (context) => SettingView(onLogout: _logout)));
+                       // ✅ تمرير حالة المدير إلى SettingView
+                       Navigator.push(context, MaterialPageRoute(builder: (context) => SettingView(onLogout: _logout, isAdmin: _isAdmin)));
                     }
                   ),
                   SettingRow(
-                    icon: "assets/icons/p_contact.png", 
+                    iconData: Icons.call, 
                     title: "Contact Ego Gym", 
                     onPressed: () {
                        Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactUsView()));
+                    }
+                  ),
+                  SettingRow(
+                    iconData: Icons.code, 
+                    title: "About the Developer", 
+                    onPressed: () {
+                       Navigator.push(context, MaterialPageRoute(builder: (context) =>  HowUsView()));
                     }
                   ),
                 ],

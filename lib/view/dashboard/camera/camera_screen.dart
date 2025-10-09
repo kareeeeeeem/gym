@@ -169,25 +169,37 @@ void _takePhotoAndSave() async {
     if (originalImage == null) {
       throw Exception("فشل في فك تشفير الصورة.");
     }
-
-    // 3. إضافة العلامة المائية
+// 3. إضافة العلامة المائية
     const String watermarkText = "Ego Gym";
-    final int fontSize =
-        (originalImage.height / 30).round().clamp(10, 50); // حجم الخط
+    // 🔑 التعديل 1: تحسين حجم الخط ليتناسب مع معظم الصور، مع حد أقصى للحجم
+    final int fontSize = (originalImage.height / 25).round().clamp(20, 70); 
 
-    final textWidth = fontSize * watermarkText.length;
-    final int textX = originalImage.width - textWidth - 50;
-    final int textY = originalImage.height - fontSize - 20;
+    // 🔑 التعديل 2: تحديد موضع العلامة المائية في الزاوية اليمنى السفلية (مع هامش 40 بكسل)
+    // لحساب عرض النص، نحتاج إلى تقدير يعتمد على نوع الخط. سنستخدم تقدير تقريبي:
+    final double charWidthFactor = 0.6; // تقدير نسبة عرض الحرف إلى ارتفاعه
+    final int estimatedTextWidth = (fontSize * watermarkText.length * charWidthFactor).round();
+    
+    // الموضع الأفقي: ابدأ من عرض الصورة واطرح عرض النص والهامش
+    final int textX = originalImage.width - estimatedTextWidth - 40; 
+    
+    // الموضع العمودي: ابدأ من ارتفاع الصورة واطرح ارتفاع الخط والهامش
+    final int textY = originalImage.height - fontSize - 40; 
 
+    // 🔑 التعديل 3: استخدام لون رمادي فاتح شبه شفاف (للحصول على تأثير "مطبوع")
+    // بما أن img.drawString لا تدعم الشفافية، نستخدم لون فاتح بديل للأبيض.
+    final img.Color watermarkColor = img.ColorRgb8(200, 200, 200); // رمادي فاتح
+
+    // يمكنك استخدام خط أكبر وأكثر وضوحًا إذا كان متاحًا، لكن سنبقي على الخط الافتراضي
+    // مع تعديل الحجم
     img.drawString(
       originalImage,
       watermarkText,
-      font: img.arial24,
+      // يجب أن تستخدم خطًا متاحًا، arial24 هو خط مصغر، سنستخدمه مع الحجم المعدل
+      font: img.arial14, // استخدام خط أصغر للحجم يجعله يتناسب مع الحجم الذي حسبناه
       x: textX,
       y: textY,
-      color: img.ColorRgb8(255, 255, 255),
+      color: watermarkColor,
     );
-
     // 4. تشفير الصورة المعدلة
     final encodedImageBytes = img.encodeJpg(originalImage, quality: 90);
 
@@ -211,19 +223,19 @@ void _takePhotoAndSave() async {
         _lastCapturedImagePath = newImageFile.path;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ تم حفظ الصورة بنجاح مع العلامة المائية.")),
-      );
-    } else {
-      throw Exception("فشل حفظ الصورة في المعرض.");
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("✅ beautiful.")),
+          );
+        } else {
+          throw Exception("فشل حفظ الصورة في المعرض.");
+        }
+      } catch (e) {
+        print("Watermark Error: $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ فشل: ${e.toString()}")),
+        );
+      }
     }
-  } catch (e) {
-    print("Watermark Error: $e");
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("❌ فشل: ${e.toString()}")),
-    );
-  }
-}
 
 
   // دالة وهمية للانتقال إلى المعرض

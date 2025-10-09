@@ -2,52 +2,97 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- ========================================================= -->
-    <!-- 🔥 الأذونات المطلوبة لتشغيل الكاميرا والتسجيل والتخزين 🔥 -->
+    <!-- 🔥 الأذونات الأساسية للتطبيق (كاميرا، صوت، تخزين، إشعارات) 🔥 -->
     <!-- ========================================================= -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" /> 
-    
-    <!-- إذن التخزين لكتابة الصور/الفيديوهات (مطلوب للإصدارات القديمة من Android) -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- إذن الإشعارات (Android 13 وما فوق) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- إذن التخزين للأنظمة القديمة (قبل Android 13) -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"
         tools:replace="android:maxSdkVersion" />
 
     <!-- ========================================================= -->
-    <!-- 🔥 يجب إضافة ميزات (Features) الكاميرا لضمان عملها 🔥 -->
+    <!-- 🔧 ميزات الكاميرا لضمان عملها بشكل صحيح -->
     <!-- ========================================================= -->
-    <uses-feature android:name="android.hardware.camera" android:required="true"/>
-    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
+    <!-- ========================================================= -->
+    <!-- 🏗️ إعداد التطبيق -->
+    <!-- ========================================================= -->
     <application
-        android:label="ego"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:label="ego"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="33">
+
+        <!-- 🟢 إعداد القناة الافتراضية للإشعارات (هامة جداً) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="high_importance_channel" />
+
+        <!-- 🟣 نشاط التشغيل الرئيسي -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""
             android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:windowSoftInputMode="adjustResize">
+
+            <!-- 🎨 الثيم الافتراضي -->
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
+
+            <!-- 🚀 نقطة انطلاق التطبيق -->
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- ⚙️ إعدادات Flutter -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- 🟠 OneSignal تحتاج Internet Access مفعّل -->
+        <meta-data
+            android:name="onesignal_app_id"
+            android:value="e17ceb1e-09d4-41d4-aee4-91cdee1b1d6b" />
+
+        <!-- 🟢 قناة الإشعارات الافتراضية (تضمن عرض الإشعارات بشكل صحيح) -->
+        <meta-data
+            android:name="com.onesignal.NotificationChannelName"
+            android:value="High Importance Notifications" />
+
+        <meta-data
+            android:name="com.onesignal.NotificationChannelDescription"
+            android:value="This channel is used for important notifications." />
+
+        <meta-data
+            android:name="com.onesignal.NotificationChannelImportance"
+            android:value="4" /> <!-- 4 = Importance.max -->
     </application>
+
+    <!-- ========================================================= -->
+    <!-- 🔍 Queries لازمة لبعض العمليات (مثلاً التعامل مع النصوص) -->
+    <!-- ========================================================= -->
     <queries>
         <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
         </intent>
     </queries>
 </manifest>

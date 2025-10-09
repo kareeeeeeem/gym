@@ -69,43 +69,44 @@ class RoundButton extends StatelessWidget {
 // =========================================================================
 // 1. دالة التحقق من حالة المدير (المنطق الحقيقي)
 // =========================================================================
+// =========================================================================
+// 1. دالة التحقق من حالة المدير (النسخة النهائية المعتمدة على Firestore فقط)
+// =========================================================================
 
 Future<bool> _fetchAdminStatusFromFirestore() async {
   // 1. جلب المستخدم الحالي
   final user = FirebaseAuth.instance.currentUser;
 
   if (user != null) {
-    // 📌 قائمة اختبار لمدراء التطوير (يمكن إضافة إيميل المطورين هنا كطبقة أمان ثانية)
-    final List<String> developerAdmins = const [
-      "micohelmy5@gmail.com", 
-    ];
-    final userEmail = user.email?.toLowerCase() ?? '';
-
-    // التحقق من قائمة المطورين أولاً
-    if (developerAdmins.contains(userEmail)) {
-        return true; 
-    }
-
     try {
+      // ⚠️ ملاحظة: أزلنا قائمة developerAdmins الثابتة بالكامل.
+
       // 2. محاولة جلب وثيقة المستخدم من مجموعة 'users'
       final userDoc = await FirebaseFirestore.instance
           .collection('users') 
-          .doc(user.uid)
+          .doc(user.uid) // هذا هو الـ UID المسجل به حالياً
           .get();
           
-      // 3. التحقق مما إذا كانت الوثيقة موجودة وتحتوي على حقل 'isAdmin'
+      // 3. التحقق مما إذا كانت الوثيقة موجودة وتحتوي على حقل 'isAdmin: true'
       if (userDoc.exists) {
+        // إذا كان الحقل isAdmin موجوداً وقيمته true، نرجع true. 
+        // إذا كان مفقوداً أو false، نرجع false (بسبب ?? false).
         final isAdminStatus = userDoc.data()?['isAdmin'] as bool? ?? false;
         return isAdminStatus; 
       }
     } catch (e) {
+      // في حالة وجود خطأ في الاتصال بقاعدة البيانات، نرجع false.
       print("Error fetching admin status: $e");
       return false;
     }
   }
+  // إذا لم يكن هناك مستخدم مسجل الدخول، نرجع false.
   return false; 
 }
 
+// =========================================================================
+// تذكر إزالة أي كود يتعلق بـ developerAdmins من هذه الدالة بالكامل
+// =========================================================================
 
 // =========================================================================
 // 2. تعريف الألوان والنماذج (Models & Colors)
@@ -363,7 +364,7 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
               backgroundColor: AppColors.blackColor,
               appBar: AppBar(
                 title: Text(
-                  currentAdminStatus ? 'المتجر والاشتراكات (إدارة)' : 'المتجر والاشتراكات', 
+                  currentAdminStatus ? 'Store & Subscriptions ' : 'Store & Subscriptions',
                   style: const TextStyle(color: AppColors.accentColor, fontWeight: FontWeight.bold)
                 ),
                 backgroundColor: AppColors.blackColor,
@@ -388,8 +389,8 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
                       unselectedLabelColor: AppColors.darkGrayColor,
                       labelStyle: TextStyle(fontWeight: FontWeight.w700),
                       tabs: [
-                        Tab(text: 'الاشتراكات والعروض'),
-                        Tab(text: 'متجر المنتجات'),
+                        Tab(text: 'Subscriptions & Offers'),
+                        Tab(text: 'Products Store'),
                       ],
                     ),
                   ),

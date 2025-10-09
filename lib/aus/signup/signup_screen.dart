@@ -5,6 +5,8 @@ import 'package:fitnessapp/view/welcome/welcome_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; 
+
 
 // 💡 You should import the main user screen to navigate to it after successful registration.
 // Please adjust this path to match your project structure.
@@ -44,6 +46,8 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _firestore = FirebaseFirestore.instance; // ⬅️ أضف هذا السطر
+  
   
   bool _isLoading = false;
   String? _errorMessage;
@@ -78,18 +82,32 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
     });
 
     try {
-      // Create user in Firebase
-      await _auth.createUserWithEmailAndPassword(
+      // 1. Create user in Firebase Auth
+      final userCredential = await _auth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
       
-      // 💡 Optional Step: Update User's Display Name
-      await _auth.currentUser!.updateDisplayName(_nameController.text.trim());
+      final User? user = userCredential.user;
+
+      if (user != null) {
+          // 2. 🔑 الخطوة الحاسمة: حفظ بيانات المستخدم في Firestore
+          await _firestore.collection('users').doc(user.uid).set({
+            // هذا الحقل ضروري لعملية البحث عن الأدمن بواسطة الإيميل
+            'email': user.email!.toLowerCase(), 
+            'fullName': _nameController.text.trim(), // حفظ الاسم أيضاً
+            'isAdmin': false, // القيمة الافتراضية
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+          
+          // 💡 Optional Step: Update User's Display Name
+          await user.updateDisplayName(_nameController.text.trim());
+      }
+      
 
       // Authentication successful, navigate to the main screen
       if (mounted) {
-        // Navigate to User Home Screen
+        // Navigate to User Home Screen ⬅️ تم استعادة هذا الجزء
         Navigator.of(context).pushReplacementNamed(CompleteProfileScreen.routeName); 
       }
       
@@ -115,6 +133,8 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
       });
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {

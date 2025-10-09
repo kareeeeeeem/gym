@@ -441,7 +441,7 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
               // مسار الانتقال (Path Page)
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                MaterialPageRoute(builder: (context) => const NotificationsPage()),
               );
             },
           ),

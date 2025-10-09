@@ -41,48 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBztxm0edQ75ZouKsujCKzFwasV7hNbQYo',
-    appId: '1:1011533277601:web:8395fd3e7cd1b0831c03e0',
-    messagingSenderId: '1011533277601',
-    projectId: 'egouser-d77d2',
-    authDomain: 'egouser-d77d2.firebaseapp.com',
-    storageBucket: 'egouser-d77d2.firebasestorage.app',
-    measurementId: 'G-DGWK93GD4R',
+    apiKey: 'AIzaSyCalXS4pQFbDU6kuxY8aNyDnK3XJNzWKLs',
+    appId: '1:586180299581:web:924edcba6cb9b9693dd354',
+    messagingSenderId: '586180299581',
+    projectId: 'egogym-aad03',
+    authDomain: 'egogym-aad03.firebaseapp.com',
+    storageBucket: 'egogym-aad03.firebasestorage.app',
+    measurementId: 'G-NPR50CMPL5',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDfqwJDi1z5sasLrhDKDwRxp4azh6jivik',
-    appId: '1:1011533277601:android:2fb6da23fef429ff1c03e0',
-    messagingSenderId: '1011533277601',
-    projectId: 'egouser-d77d2',
-    storageBucket: 'egouser-d77d2.firebasestorage.app',
+    apiKey: 'AIzaSyAp5t-LGjpPeCL-_LlO-1YUd9ce_faKXKk',
+    appId: '1:586180299581:android:12e2698112f7d6d53dd354',
+    messagingSenderId: '586180299581',
+    projectId: 'egogym-aad03',
+    storageBucket: 'egogym-aad03.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAhWeRRPwwDk_cRwc7g1OdWg8zpl_6MtvQ',
-    appId: '1:1011533277601:ios:3e016412313f9c721c03e0',
-    messagingSenderId: '1011533277601',
-    projectId: 'egouser-d77d2',
-    storageBucket: 'egouser-d77d2.firebasestorage.app',
+    apiKey: 'AIzaSyBKArF0mFiICXPHkgXEgrbmulSeS5og-ho',
+    appId: '1:586180299581:ios:d1f730a2319ae62b3dd354',
+    messagingSenderId: '586180299581',
+    projectId: 'egogym-aad03',
+    storageBucket: 'egogym-aad03.firebasestorage.app',
     iosBundleId: 'com.example.ego',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAhWeRRPwwDk_cRwc7g1OdWg8zpl_6MtvQ',
-    appId: '1:1011533277601:ios:3e016412313f9c721c03e0',
-    messagingSenderId: '1011533277601',
-    projectId: 'egouser-d77d2',
-    storageBucket: 'egouser-d77d2.firebasestorage.app',
+    apiKey: 'AIzaSyBKArF0mFiICXPHkgXEgrbmulSeS5og-ho',
+    appId: '1:586180299581:ios:d1f730a2319ae62b3dd354',
+    messagingSenderId: '586180299581',
+    projectId: 'egogym-aad03',
+    storageBucket: 'egogym-aad03.firebasestorage.app',
     iosBundleId: 'com.example.ego',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBztxm0edQ75ZouKsujCKzFwasV7hNbQYo',
-    appId: '1:1011533277601:web:068686c4788835421c03e0',
-    messagingSenderId: '1011533277601',
-    projectId: 'egouser-d77d2',
-    authDomain: 'egouser-d77d2.firebaseapp.com',
-    storageBucket: 'egouser-d77d2.firebasestorage.app',
-    measurementId: 'G-XFKEFNKTJN',
+    apiKey: 'AIzaSyCalXS4pQFbDU6kuxY8aNyDnK3XJNzWKLs',
+    appId: '1:586180299581:web:a97ff888df76b1c13dd354',
+    messagingSenderId: '586180299581',
+    projectId: 'egogym-aad03',
+    authDomain: 'egogym-aad03.firebaseapp.com',
+    storageBucket: 'egogym-aad03.firebasestorage.app',
+    measurementId: 'G-4J991TH7CX',
   );
+
 }

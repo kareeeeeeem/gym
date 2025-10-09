@@ -12,24 +12,16 @@ import 'package:fitnessapp/view/workour_detail_view/workout_schedule_view/workou
 import 'package:fitnessapp/view/welcome/your_goal/your_goal_screen.dart' hide YourGoalScreen;
 import 'package:flutter/material.dart';
 
-// ملاحظة مهمة: تم إزالة مسارات DashboardScreen و CameraScreen من هنا.
-// يتم التعامل معهما في MyApp في ملف main.dart لضمان تمرير قائمة الكاميرات (cameras).
 final Map<String, WidgetBuilder> routes = {
-  // شاشات التهيئة والمقدمة
   StartScreen.routeName: (context) => const StartScreen(),
   OnBoardingScreen.routeName: (context) => const OnBoardingScreen(),
   WelcomeScreen.routeName: (context) => const WelcomeScreen(),
   YourGoalScreen.routeName: (context) => const YourGoalScreen(),
 
-  // شاشات المصادقة (يجب التأكد من أسماء الفئات المستخدمة)
-  // افتراض أن UserLoginScreen هي الفئة الصحيحة:
   UserLoginScreen.routeName: (context) => const UserLoginScreen(), 
-  // افتراض أن UserSignUpScreen هي الفئة الصحيحة:
   UserSignUpScreen.routeName: (context) => const UserSignUpScreen(), 
   
-  // شاشات الملف الشخصي والأنشطة
   CompleteProfileScreen.routeName: (context) => const CompleteProfileScreen(),
-  //NotificationScreen.routeName: (context) => const NotificationScreen(),
   ActivityTrackerScreen.routeName: (context) => const ActivityTrackerScreen(),
   WorkoutScheduleView.routeName: (context) => const WorkoutScheduleView(),
   FinishWorkoutScreen.routeName: (context) => const FinishWorkoutScreen(),

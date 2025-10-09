@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fitnessapp/view/dashboard/Room/GymRoomsScreen.dart';
 import 'package:fitnessapp/view/dashboard/dashboard_screen.dart';
 import 'package:fitnessapp/aus/signup/signup_screen.dart';
 import 'package:fitnessapp/view/welcome/welcome_screen.dart';
@@ -39,6 +41,8 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
+  final _firestore = FirebaseFirestore.instance; // ⬅️ أضف هذا السطر
+
 
   @override
   void dispose() {
@@ -47,7 +51,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
     super.dispose();
   }
 
-  // Sign In function
+  // Sign In function (Added to ensure user data is updated/merged on login)
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     
@@ -60,14 +64,26 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
     });
 
     try {
-      await _auth.signInWithEmailAndPassword(
+      final userCredential = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
       
+      final User? user = userCredential.user;
+
+      if (user != null) {
+          // 🔑 الخطوة الحاسمة: تحديث/دمج بيانات المستخدم في Firestore
+          // هذا يضمن أن المستخدمين القدامى لديهم حقل 'email' في وثيقتهم لتجنب أخطاء البحث عن الأدمن.
+          await _firestore.collection('users').doc(user.uid).set({
+            'email': user.email!.toLowerCase(), 
+            // يمكن إضافة تحديثات أخرى هنا، مثل آخر وقت دخول 'lastLogin': FieldValue.serverTimestamp()
+          }, SetOptions(merge: true));
+      }
+
+
       // Authentication successful, navigate to the main user screen
       if (mounted) {
-        // 💡 Navigate to the main user screen (WelcomeScreen in this context)
+        // 💡 Navigate to the main user screen (DashboardScreen in this context)
         Navigator.of(context).pushReplacementNamed(DashboardScreen.routeName); 
       }
       
