@@ -26,5 +26,7 @@ final Map<String, WidgetBuilder> routes = {
   WorkoutScheduleView.routeName: (context) => const WorkoutScheduleView(),
   FinishWorkoutScreen.routeName: (context) => const FinishWorkoutScreen(),
   GymRoomsScreen.routeName: (context) => const GymRoomsScreen(),
+  NotificationsPage.routeName: (context) => const NotificationsPage(),
+
 
 };

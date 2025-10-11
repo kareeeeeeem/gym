@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:fitnessapp/view/dashboard/Room/RoomDetailsScreen.dart';
 import 'package:fitnessapp/view/dashboard/home/notification/notification_screen.dart';
 import 'package:flutter/material.dart';
@@ -180,7 +182,7 @@ void _initializeAuth() async {
             children: [
               const Text('Create New Training Room',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.whiteColor)),
-              Divider(color: AppColors.darkGrayColor),
+              const Divider(color: AppColors.darkGrayColor),
               _buildTextField(titleController, 'Room Title', Icons.title),
               const SizedBox(height: 15),
               // Description field
@@ -199,7 +201,7 @@ void _initializeAuth() async {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Max Participants:', style: TextStyle(color: AppColors.darkGrayColor)),
+                          const Text('Max Participants:', style: TextStyle(color: AppColors.darkGrayColor)),
                           Row(
                             children: [
                               IconButton(
@@ -224,7 +226,7 @@ void _initializeAuth() async {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Start Time:', style: TextStyle(color: AppColors.darkGrayColor)),
+                          const Text('Start Time:', style: TextStyle(color: AppColors.darkGrayColor)),
                           TextButton.icon(
                             icon: const Icon(Icons.access_time, color: AppColors.primaryColor1),
                             label: Text(
@@ -487,14 +489,38 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
                       }
 
                       final rooms = snapshot.data!.docs.map(GymRoom.fromFirestore).toList();
+                      final now = DateTime.now(); // الوقت الحالي للمقارنة
 
-                      // Filter based on search query
+                       // ⭐️⭐️⭐️ التعديل الأساسي هنا ⭐️⭐️⭐️
                       final filteredRooms = rooms.where((room) {
+                        // 1. حساب وقت نهاية الغرفة: وقت البدء + 5 ساعات
+                        final roomEndTime = room.startTime.toDate().add(const Duration(hours: 6));
+                        
+                        // 2. التحقق مما إذا كانت الغرفة لم تنته بعد (Has Not Ended)
+                        final hasNotEnded = now.isBefore(roomEndTime); 
+
+                        // 3. فلترة البحث (Search Query Filtering)
                         final query = _searchQuery.toLowerCase();
-                        return room.title.toLowerCase().contains(query) ||
+                        final matchesSearch = room.title.toLowerCase().contains(query) ||
                                room.targetMuscle.toLowerCase().contains(query) ||
                                room.creatorName.toLowerCase().contains(query);
+                        
+                        // إظهار الغرفة فقط إذا لم تنته بعد AND تطابق شروط البحث
+                        return hasNotEnded && matchesSearch;
                       }).toList();
+                      // ⭐️⭐️⭐️ نهاية التعديل ⭐️⭐️⭐️
+                      
+
+
+
+
+                      // Filter based on search query
+                      // final filteredRooms = rooms.where((room) {
+                      //   final query = _searchQuery.toLowerCase();
+                      //   return room.title.toLowerCase().contains(query) ||
+                      //          room.targetMuscle.toLowerCase().contains(query) ||
+                      //          room.creatorName.toLowerCase().contains(query);
+                      // }).toList();
                       
                       if (filteredRooms.isEmpty) {
                         return const Center(
@@ -525,11 +551,11 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat, 
-      bottomNavigationBar: BottomAppBar(
+      bottomNavigationBar: const BottomAppBar(
         color: Colors.transparent, 
         elevation: 0, // نلغي الظل
         height:  10, // ارتفاع بسيط ليرفع الزر قليلاً
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[], // لا توجد عناصر فعلية
@@ -613,18 +639,18 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
             // Muscle and Time
             Row(
               children: [
-                Icon(Icons.directions_run, size: 16, color: AppColors.accentColor),
+                const Icon(Icons.directions_run, size: 16, color: AppColors.accentColor),
                 const SizedBox(width: 5),
                 Text(
                   room.targetMuscle,
-                  style: TextStyle(color: AppColors.accentColor, fontWeight: FontWeight.bold), 
+                  style: const TextStyle(color: AppColors.accentColor, fontWeight: FontWeight.bold), 
                 ),
                 const Spacer(),
-                Icon(Icons.access_time_filled, size: 16, color: AppColors.primaryColor1),
+                const Icon(Icons.access_time_filled, size: 16, color: AppColors.primaryColor1),
                 const SizedBox(width: 5),
                 Text(
                   DateFormat('hh:mm a', 'en').format(room.startTime.toDate()),
-                  style: TextStyle(color: AppColors.primaryColor1, fontWeight: FontWeight.bold), 
+                  style: const TextStyle(color: AppColors.primaryColor1, fontWeight: FontWeight.bold), 
                 ),
               ],
             ),
@@ -633,7 +659,7 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
             // Participants and Join Button (Enhanced Visibility)
             Row(
               children: [
-                Icon(Icons.people_alt, size: 18, color: AppColors.darkGrayColor),
+                const Icon(Icons.people_alt, size: 18, color: AppColors.darkGrayColor),
                 const SizedBox(width: 5),
                 Text(
                   '$participantsCount / ${room.maxCapacity} Members',
@@ -707,7 +733,7 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
           color: Colors.red.withOpacity(0.5),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Text('Full', style: TextStyle(color: AppColors.whiteColor, fontSize: 12)),
+        child: const Text('Full', style: TextStyle(color: AppColors.whiteColor, fontSize: 12)),
       );
     }
     
@@ -732,7 +758,7 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
       style: const TextStyle(color: AppColors.whiteColor), // White text for search
       decoration: InputDecoration(
         hintText: 'Search room by name or target muscle',
-        hintStyle: TextStyle(color: AppColors.darkGrayColor),
+        hintStyle: const TextStyle(color: AppColors.darkGrayColor),
         prefixIcon: const Icon(Icons.search, color: AppColors.accentColor), // Gold/Amber icon
         filled: true,
         fillColor: AppColors.cardBackgroundColor, // Dark fill

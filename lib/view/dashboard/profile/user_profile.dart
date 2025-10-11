@@ -1,4 +1,5 @@
 import 'package:fitnessapp/view/dashboard/profile/sendNotifiactions.dart';
+import 'package:fitnessapp/view/welcome/on_boarding/start_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; 
@@ -264,6 +265,7 @@ class PlaceholderPage extends StatelessWidget {
         backgroundColor: AppColors.blackColor, 
         iconTheme: const IconThemeData(color: AppColors.whiteColor), 
         elevation: 0,
+        
       ),
       body: SingleChildScrollView( // 💡 هذا يضمن التمرير
         padding: const EdgeInsets.all(25),
@@ -989,22 +991,36 @@ class _UserProfileState extends State<UserProfile> {
      );
   }
 
-  void _logout() async {
-    print('DEBUG_AUTH: Attempting to log out...');
-    try {
-      await FirebaseAuth.instance.signOut();
-      print('DEBUG_AUTH: Logout successful.');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Logged out successfully!")));
-      }
-    } catch (e) {
-      print('DEBUG_AUTH: Error during logout: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error during logout: $e")));
-      }
+// داخل class _UserProfileState
+void _logout() async {
+  print('DEBUG_AUTH: Attempting to log out...');
+  try {
+    // 1. تسجيل الخروج من Firebase
+    await FirebaseAuth.instance.signOut();
+    print('DEBUG_AUTH: Logout successful.');
+    
+    // 2. 🚀 التنقل إلى شاشة الدخول ومسح كل الصفحات
+    if (mounted) {
+      // ⚠️ يجب عليك تعريف شاشة الدخول (LoginScreen) هنا
+      // افترض أن اسم الشاشة هو LoginScreen
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => const StartScreen(), // ⬅️ ضع اسم شاشة الدخول الصحيح هنا
+        ),
+        (Route<dynamic> route) => false, // يزيل كل صفحات التطبيق السابقة
+      );
+      
+      // يمكنك إزالة الـ SnackBar هنا إذا أردت، لأن التنقل سيغطي الشاشة
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Logged out successfully!")));
+    }
+    
+  } catch (e) {
+    print('DEBUG_AUTH: Error during logout: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error during logout: $e")));
     }
   }
-
+}
 // ✅ تم إصلاح مشكلة عدم جلب البيانات وضمان قراءة الإيميل 
 void _fetchUserData() async {
     final user = FirebaseAuth.instance.currentUser;

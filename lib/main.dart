@@ -1,19 +1,25 @@
 // ignore_for_file: avoid_print
+import 'dart:convert';
+
+import 'package:fitnessapp/view/dashboard/home/notification/notification_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:camera/camera.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // 🧩 شاشات وتنسيقات المشروع
-import 'package:fitnessapp/const/const.dart';
 import 'package:fitnessapp/routes.dart';
 import 'package:fitnessapp/view/dashboard/dashboard_screen.dart';
 import 'package:fitnessapp/view/dashboard/camera/camera_screen.dart';
 import 'package:fitnessapp/view/welcome/on_boarding/start_screen.dart';
 
 const OneSignalAppId = 'e17ceb1e-09d4-41d4-aee4-91cdee1b1d6b';
+
+// 👀 notifier مشترك
+final notificationsNotifier = ValueNotifier<List<Map<String, dynamic>>>([]);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,12 +46,28 @@ Future<void> main() async {
 Future<void> _initializeOneSignal() async {
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
   OneSignal.initialize(OneSignalAppId);
-  OneSignal.Notifications.requestPermission(true);
+  await OneSignal.Notifications.requestPermission(true);
   OneSignal.User.pushSubscription.optIn();
 
-  OneSignal.Notifications.addForegroundWillDisplayListener((event) {
-    print("📩 Notification received: ${event.notification.jsonRepresentation()}");
+  // عند استقبال إشعار أثناء عمل التطبيق
+  OneSignal.Notifications.addForegroundWillDisplayListener((event) async {
+    final notif = event.notification;
+    final newNotif = {
+      "title": notif.title ?? "No title",
+      "body": notif.body ?? "No message",
+      "time": DateTime.now().toIso8601String(),
+    };
+
+    // أضف للإشعارات الحالية
+    notificationsNotifier.value = [newNotif, ...notificationsNotifier.value];
+
+    // خزّنها في SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('saved_notifications', jsonEncode(notificationsNotifier.value));
+    await prefs.setInt('unread_count', notificationsNotifier.value.length);
+
     event.notification.display();
+    print("📩 Notification received: $newNotif");
   });
 
   OneSignal.Notifications.addClickListener((event) {
@@ -63,9 +85,8 @@ class MyRootApp extends StatelessWidget {
 
   const MyRootApp({super.key, required this.cameras});
 
-  // 🔍 نتحقق من المستخدم الحالي بعد تشغيل التطبيق
   Future<User?> _checkUser() async {
-    await Future.delayed(const Duration(seconds: 1)); // ندي Firebase وقت يحمّل الجلسة
+    await Future.delayed(const Duration(seconds: 1));
     return FirebaseAuth.instance.currentUser;
   }
 
@@ -74,7 +95,6 @@ class MyRootApp extends StatelessWidget {
     return FutureBuilder<User?>(
       future: _checkUser(),
       builder: (context, snapshot) {
-        // ⏳ أثناء تحميل الحالة
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const MaterialApp(
             debugShowCheckedModeBanner: false,
@@ -85,17 +105,12 @@ class MyRootApp extends StatelessWidget {
           );
         }
 
-        // ✅ المستخدم مسجل دخول
-        if (snapshot.hasData) {
-          return MyApp(
-            initialScreen: DashboardScreen(cameras: cameras),
-            cameras: cameras,
-          );
-        }
+        final initialScreen = snapshot.hasData
+            ? DashboardScreen(cameras: cameras)
+            : const StartScreen();
 
-        // ❌ المستخدم مش مسجل
         return MyApp(
-          initialScreen: const StartScreen(),
+          initialScreen: initialScreen,
           cameras: cameras,
         );
       },
@@ -120,6 +135,7 @@ class MyApp extends StatelessWidget {
         ...routes,
         DashboardScreen.routeName: (context) => DashboardScreen(cameras: cameras),
         CameraScreen.routeName: (context) => CameraScreen(cameras: cameras),
+        NotificationsPage.routeName: (context) => const NotificationsPage(),
       };
 
   @override

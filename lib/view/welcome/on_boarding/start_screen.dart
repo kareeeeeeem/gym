@@ -53,8 +53,12 @@ class StartScreen extends StatelessWidget {
                 minWidth: double.maxFinite,
                 height: 50,
                 onPressed: () {
-                  Navigator.pushNamed(context, UserSignUpScreen.routeName);
-                },
+Navigator.of(context).pushAndRemoveUntil(
+  MaterialPageRoute(
+    builder: (context) => const UserSignUpScreen(), // ⬅️ بناء المسار الجديد (المعامل الأول)
+  ),
+  (Route<dynamic> route) => false, // ⬅️ شرط الإزالة (المعامل الثاني): أزل كل شيء
+);                     },
                 color: AppColors.whiteColor,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                 textColor: AppColors.primaryColor1,

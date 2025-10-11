@@ -256,8 +256,11 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.push( context,
-                          MaterialPageRoute(builder: (context) => const UserLoginScreen()),
+                        // 💡 التعديل هنا: يجب استبدال UserLoginScreen بالصفحة الرئيسية للتطبيق.
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => const UserLoginScreen()), // ⬅️ ضع اسم الصفحة الرئيسية/الوجهات هنا
+                          (Route<dynamic> route) => false, // هذا الشرط يعني: أزل كل شيء أسفل الصفحة الجديدة
                         );
                       },
 

@@ -84,8 +84,13 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
       // Authentication successful, navigate to the main user screen
       if (mounted) {
         // 💡 Navigate to the main user screen (DashboardScreen in this context)
-        Navigator.of(context).pushReplacementNamed(DashboardScreen.routeName); 
-      }
+// ✅ الاستخدام الصحيح لـ MaterialPageRoute
+Navigator.of(context).pushAndRemoveUntil(
+  MaterialPageRoute(
+    builder: (context) => const DashboardScreen(cameras: [],), // ⬅️ بناء المسار الجديد (المعامل الأول)
+  ),
+  (Route<dynamic> route) => false, // ⬅️ شرط الإزالة (المعامل الثاني): أزل كل شيء
+);      }
       
     } on FirebaseAuthException catch (e) {
       String message = 'Login error. Please try again.';
