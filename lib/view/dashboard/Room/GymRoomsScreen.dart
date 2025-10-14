@@ -104,6 +104,8 @@ class _GymRoomsScreenState extends State<GymRoomsScreen> {
   String _searchQuery = '';
   // State to track if authentication is ready
   bool _isAuthReady = false; 
+  final bool _isAdmin = false; 
+// يجب عليك إضافة منطق في initState أو في Stream آخر يقوم بجلب دور المستخدم وتحديث _isAdmin
 
   // Get current user data
   String get currentUserId => _auth.currentUser?.uid ?? '';
@@ -362,6 +364,22 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
   final now = DateTime.now();
   final creationTime = room.createdAt.toDate();
   final difference = now.difference(creationTime);
+
+
+   // 1. تحقق من هوية المستخدم
+  final isCreator = room.creatorId == currentUserId;
+  final canCreatorDelete = difference.inMinutes <= 300; // 5 hours limit
+
+  // 2. تحديد الصلاحية الكلية
+  final isAuthorized = _isAdmin || (isCreator && canCreatorDelete); 
+
+  if (!isAuthorized) {
+    _showAlertDialog(
+      'Access Denied', 
+      'Only the creator (within 5 hours) or an administrator can delete this room.'
+    );
+    return;
+  }
   
   // Check if more than 60 minutes (1 hour) has passed
   if (difference.inMinutes > 60) {
@@ -524,7 +542,9 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
                       
                       if (filteredRooms.isEmpty) {
                         return const Center(
-                          child: Text('No rooms currently available. Be the first to create one!',
+                          child: Text(
+                            'No rooms currently available.\nBe the first to create one!',
+
                               textAlign: TextAlign.center, style: TextStyle(color: AppColors.darkGrayColor)),
                         );
                       }
@@ -676,56 +696,60 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
       ),
     );
   }
-
-  Widget _buildJoinButton(GymRoom room, bool isFull) {
+// =========================================================================
+// 7. Helper Widgets (Widgets for Design) - _buildJoinButton
+// =========================================================================
+Widget _buildJoinButton(GymRoom room, bool isFull) {
     final isJoined = room.participantUids.contains(currentUserId); 
     final isCreator = room.creatorId == currentUserId;
 
-    // Check if the 60 minute deletion window is open
-    bool canDelete = false;
+    // Check if the deletion window is open for the creator
+    bool canCreatorDelete = false;
     if (isCreator) {
         final now = DateTime.now();
         final creationTime = room.createdAt.toDate();
         final difference = now.difference(creationTime);
-        canDelete = difference.inMinutes <= 60;
+        canCreatorDelete = difference.inMinutes <= 300; // 5 hours check
     }
 
-    // If user is the creator
+    // 1. التحقق من عرض زر الحذف/الإدارة للمشرف أو المنشئ المسموح له
+    if (_isAdmin || (isCreator && canCreatorDelete)) {
+        
+        // إذا كان مشرفاً أو منشئاً مسموحاً له، اعرض زر الحذف
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // إذا كان مشرفاً، يمكن عرض شارة "Admin" بدلاً من "Creator"
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: _isAdmin ? Colors.indigo.shade600 : AppColors.primaryColor1.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(_isAdmin ? 'Admin' : 'Creator', style: const TextStyle(color: AppColors.whiteColor, fontSize: 12)),
+            ),
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: () => _deleteRoomIfAllowed(room),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade800,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text('Delete', style: TextStyle(color: AppColors.whiteColor, fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        );
+    } 
+    
+    // 2. إذا كان منشئاً لكن مهلة الحذف قد انتهت
     if (isCreator) {
-        if (canDelete) {
-            // Show Delete Button and Creator Status (or just Delete)
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryColor1.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text('Creator', style: TextStyle(color: AppColors.whiteColor, fontSize: 12)),
-                ),
-                const SizedBox(width: 10),
-                GestureDetector(
-                  onTap: () => _deleteRoomIfAllowed(room),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade800,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Text('Delete', style: TextStyle(color: AppColors.whiteColor, fontSize: 12, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
-            );
-        } else {
-             // Creator, but deletion time passed
-             return _buildGradientButton('Details & Chat', () => _navigateToRoomDetails(room), isSmall: true);
-        }
+         return _buildGradientButton('Details & Chat', () => _navigateToRoomDetails(room), isSmall: true);
     }
-
-    // If full
+    
+    // 3. إذا كانت ممتلئة (للمستخدم العادي)
     if (isFull) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -737,15 +761,14 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
       );
     }
     
-    // If already joined
+    // 4. إذا انضم بالفعل (للمستخدم العادي)
     if (isJoined) {
       return _buildGradientButton('Details & Chat', () => _navigateToRoomDetails(room), isSmall: true);
     }
 
-    // Join Button
+    // 5. زر الانضمام (للمستخدم العادي)
     return _buildGradientButton('Join Now', () => _joinRoom(room), isSmall: true);
-  }
-
+}
 
   Widget _buildSearchField() {
     return TextField(

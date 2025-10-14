@@ -16,7 +16,7 @@ class WorkoutScheduleView extends StatefulWidget {
 
 class _WorkoutScheduleViewState extends State<WorkoutScheduleView> {
 
-  CalendarAgendaController _calendarAgendaControllerAppBar =
+  final CalendarAgendaController _calendarAgendaControllerAppBar =
   CalendarAgendaController();
   late DateTime _selectedDateAppBBar;
 
@@ -117,7 +117,7 @@ class _WorkoutScheduleViewState extends State<WorkoutScheduleView> {
             ),
           ),
         ),
-        title: Text(
+        title: const Text(
           "Workout Schedule",
           style: TextStyle(
               color: AppColors.blackColor, fontSize: 16, fontWeight: FontWeight.w700),
@@ -225,7 +225,7 @@ class _WorkoutScheduleViewState extends State<WorkoutScheduleView> {
                               width: 80,
                               child: Text(
                                 getTime(index * 60),
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: AppColors.blackColor,
                                   fontSize: 12,
                                 ),
@@ -293,7 +293,7 @@ class _WorkoutScheduleViewState extends State<WorkoutScheduleView> {
                                                                 ),
                                                               ),
                                                             ),
-                                                            Text(
+                                                            const Text(
                                                               "Workout Schedule",
                                                               style: TextStyle(
                                                                   color: AppColors.blackColor,
@@ -334,7 +334,7 @@ class _WorkoutScheduleViewState extends State<WorkoutScheduleView> {
                                                         ),
                                                         Text(
                                                           sObj["name"].toString(),
-                                                          style: TextStyle(
+                                                          style: const TextStyle(
                                                               color: AppColors.blackColor,
                                                               fontSize: 14,
                                                               fontWeight:
@@ -354,7 +354,7 @@ class _WorkoutScheduleViewState extends State<WorkoutScheduleView> {
                                                           ),
                                                           Text(
                                                             "${ getDayTitle(sObj["start_time"].toString()) }|${getStringDateToOtherFormate(sObj["start_time"].toString(), outFormatStr: "h:mm aa")}",
-                                                            style: TextStyle(
+                                                            style: const TextStyle(
                                                                 color: AppColors.grayColor,
                                                                 fontSize: 12),
                                                           )
@@ -393,7 +393,7 @@ class _WorkoutScheduleViewState extends State<WorkoutScheduleView> {
                                             child: Text(
                                               "${sObj["name"].toString()}, ${getStringDateToOtherFormate(sObj["start_time"].toString(), outFormatStr: "h:mm aa")}",
                                               maxLines: 1,
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: AppColors.whiteColor,
                                                 fontSize: 12,
                                               ),
@@ -439,7 +439,7 @@ class _WorkoutScheduleViewState extends State<WorkoutScheduleView> {
                     color: Colors.black12, blurRadius: 5, offset: Offset(0, 2))
               ]),
           alignment: Alignment.center,
-          child: Icon(
+          child: const Icon(
             Icons.add,
             size: 20,
             color: AppColors.whiteColor,

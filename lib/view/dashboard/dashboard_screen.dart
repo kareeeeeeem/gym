@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart'; 
 
 import 'home/home_screen.dart';
-import 'package:fitnessapp/view/dashboard/activity/activity_screen.dart'; 
+import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/activity_screen.dart'; 
 
 // =========================================================================
 // تم إزالة تعريف AppColors.
@@ -52,7 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _widgetOptions = <Widget>[
       const GymRoomsScreen(),          // Index 0: غرف الجيم
-      StoreAndSubscriptionsScreen(), // 🟢 تم التعديل
+      const StoreAndSubscriptionsScreen(), // 🟢 تم التعديل
       CameraScreen(cameras: widget.cameras), // Index 2: الكاميرا
       const ActivityScreen(),           // Index 3: النشاط
       const UserProfile(),              // Index 4: البروفايل

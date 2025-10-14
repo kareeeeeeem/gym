@@ -135,7 +135,7 @@ class _ExercisesStepDetailsState extends State<ExercisesStepDetails> {
               ),
               Text(
                 widget.eObj["title"].toString(),
-                style: TextStyle(
+                style: const TextStyle(
                     color: AppColors.blackColor,
                     fontSize: 16,
                     fontWeight: FontWeight.w700),
@@ -143,7 +143,7 @@ class _ExercisesStepDetailsState extends State<ExercisesStepDetails> {
               const SizedBox(
                 height: 4,
               ),
-              Text(
+              const Text(
                 "Easy | 390 Calories Burn",
                 style: TextStyle(
                   color: AppColors.grayColor,
@@ -153,7 +153,7 @@ class _ExercisesStepDetailsState extends State<ExercisesStepDetails> {
               const SizedBox(
                 height: 15,
               ),
-              Text(
+              const Text(
                 "Descriptions",
                 style: TextStyle(
                     color: AppColors.blackColor,
@@ -163,7 +163,7 @@ class _ExercisesStepDetailsState extends State<ExercisesStepDetails> {
               const SizedBox(
                 height: 4,
               ),
-              ReadMoreText(
+              const ReadMoreText(
                 'A jumping jack, also known as a star jump and called a side-straddle hop in the US military, is a physical jumping exercise performed by jumping to a position with the legs spread wide A jumping jack, also known as a star jump and called a side-straddle hop in the US military, is a physical jumping exercise performed by jumping to a position with the legs spread wide',
                 trimLines: 4,
                 colorClickableText: AppColors.blackColor,
@@ -175,7 +175,7 @@ class _ExercisesStepDetailsState extends State<ExercisesStepDetails> {
                   fontSize: 12,
                 ),
                 moreStyle:
-                const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
               ),
               const SizedBox(
                 height: 15,
@@ -183,7 +183,7 @@ class _ExercisesStepDetailsState extends State<ExercisesStepDetails> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     "How To Do It",
                     style: TextStyle(
                         color: AppColors.blackColor,
@@ -194,7 +194,7 @@ class _ExercisesStepDetailsState extends State<ExercisesStepDetails> {
                     onPressed: () {},
                     child: Text(
                       "${stepArr.length} Sets",
-                      style: TextStyle(color: AppColors.grayColor, fontSize: 12),
+                      style: const TextStyle(color: AppColors.grayColor, fontSize: 12),
                     ),
                   )
                 ],
@@ -212,7 +212,7 @@ class _ExercisesStepDetailsState extends State<ExercisesStepDetails> {
                   );
                 }),
               ),
-              Text(
+              const Text(
                 "Custom Repetitions",
                 style: TextStyle(
                     color: AppColors.blackColor,
@@ -248,16 +248,16 @@ class _ExercisesStepDetailsState extends State<ExercisesStepDetails> {
                         ),
                         Text(
                           " ${(index + 1) * 15} Calories Burn",
-                          style: TextStyle(color: AppColors.grayColor, fontSize: 10),
+                          style: const TextStyle(color: AppColors.grayColor, fontSize: 10),
                         ),
                         Text(
                           " ${index + 1} ",
-                          style: TextStyle(
+                          style: const TextStyle(
                               color: AppColors.grayColor,
                               fontSize: 24,
                               fontWeight: FontWeight.w500),
                         ),
-                        Text(
+                        const Text(
                           " times",
                           style: TextStyle(color: AppColors.grayColor, fontSize: 16),
                         )

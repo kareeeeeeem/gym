@@ -1,8 +1,5 @@
-import 'package:fitnessapp/view/dashboard/dashboard_screen.dart';
-import 'package:fitnessapp/view/welcome/on_boarding/on_boarding_screen.dart';
 import 'package:fitnessapp/aus/signup/signup_screen.dart' hide AppColors;
-import 'package:fitnessapp/view/welcome/welcome_screen.dart';
-import 'package:fitnessapp/view/welcome/your_goal/your_goal_screen.dart';
+import 'package:fitnessapp/view/welcome/on_boarding/on_boarding_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../../../const/utils/app_colors.dart';
@@ -55,7 +52,7 @@ class StartScreen extends StatelessWidget {
                 onPressed: () {
 Navigator.of(context).pushAndRemoveUntil(
   MaterialPageRoute(
-    builder: (context) => const UserSignUpScreen(), // ⬅️ بناء المسار الجديد (المعامل الأول)
+    builder: (context) => const OnBoardingScreen(), // ⬅️ بناء المسار الجديد (المعامل الأول)
   ),
   (Route<dynamic> route) => false, // ⬅️ شرط الإزالة (المعامل الثاني): أزل كل شيء
 );                     },

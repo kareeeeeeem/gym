@@ -1,4 +1,5 @@
-import 'package:fitnessapp/view/dashboard/activity/activity_tracker/activity_tracker_screen.dart';
+import 'package:fitnessapp/view/dashboard/activity/WorkoutLogPage.dart';
+import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/activity_tracker_screen.dart';
 import 'package:fitnessapp/view/dashboard/Room/GymRoomsScreen.dart';
 import 'package:fitnessapp/view/workour_detail_view/finish_workout_screen.dart';
 import 'package:fitnessapp/view/dashboard/home/notification/notification_screen.dart';
@@ -9,7 +10,6 @@ import 'package:fitnessapp/view/dashboard/profile/complete_profile_screen.dart';
 import 'package:fitnessapp/aus/signup/signup_screen.dart' hide LoginScreen;
 import 'package:fitnessapp/view/welcome/welcome_screen.dart';
 import 'package:fitnessapp/view/workour_detail_view/workout_schedule_view/workout_schedule_view.dart';
-import 'package:fitnessapp/view/welcome/your_goal/your_goal_screen.dart' hide YourGoalScreen;
 import 'package:flutter/material.dart';
 
 final Map<String, WidgetBuilder> routes = {
@@ -27,6 +27,7 @@ final Map<String, WidgetBuilder> routes = {
   FinishWorkoutScreen.routeName: (context) => const FinishWorkoutScreen(),
   GymRoomsScreen.routeName: (context) => const GymRoomsScreen(),
   NotificationsPage.routeName: (context) => const NotificationsPage(),
+
 
 
 };

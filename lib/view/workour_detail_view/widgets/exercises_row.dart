@@ -30,11 +30,11 @@ class ExercisesRow extends StatelessWidget {
                 children: [
                   Text(
                     eObj["title"].toString(),
-                    style: TextStyle(color: AppColors.blackColor, fontSize: 14, fontWeight: FontWeight.w500),
+                    style: const TextStyle(color: AppColors.blackColor, fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                   Text(
                     eObj["value"].toString(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.grayColor,
                       fontSize: 12,
                     ),

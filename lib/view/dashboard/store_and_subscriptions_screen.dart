@@ -277,7 +277,7 @@ Future<void> addProduct(ProductModel product) async {
     await _getPublicDataCollection('products').add(product.toFirestore());
   } catch (error) { 
     print("❌ Error adding product: $error"); 
-    throw error; // 💡 إعادة رمي الخطأ لكي تلتقطه دالة _submit
+    rethrow; // 💡 إعادة رمي الخطأ لكي تلتقطه دالة _submit
   }
 }
 
@@ -628,12 +628,16 @@ class SubscriptionCard extends StatelessWidget {
                 ...sub.features.map((feature) => Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+
                         children: [
                           const Icon(Icons.check_circle, color: AppColors.greenColor, size: 16),
                           const SizedBox(width: 8),
-                          Text(
-                            feature,
-                            style: const TextStyle(color: AppColors.whiteColor, fontSize: 13),
+                          Expanded(
+                            child: Text(
+                              feature,
+                              style: const TextStyle(color: AppColors.whiteColor, fontSize: 13),
+                            ),
                           ),
                         ],
                       ),
@@ -1031,8 +1035,8 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
           child: ListView(
             shrinkWrap: true,
             children: <Widget>[
-              Center(
-                child: const Text(
+              const Center(
+                child: Text(
                   'إضافة اشتراك جديد',
                   style: TextStyle(
                     color: AppColors.accentColor,
@@ -1131,10 +1135,6 @@ class _AddProductModalState extends State<AddProductModal> {
     );
   }
 
-// ❌ الكود القديم
-// addProduct(newProduct).then((_) { ...
-
-// ✅ الكود الجديد
 void _submit() async { // 💡 اجعل الدالة asynchronous
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
@@ -1198,8 +1198,8 @@ void _submit() async { // 💡 اجعل الدالة asynchronous
           child: ListView(
             shrinkWrap: true,
             children: <Widget>[
-              Center(
-                child: const Text(
+              const Center(
+                child: Text(
                   'إضافة منتج جديد',
                   style: TextStyle(
                     color: AppColors.accentColor,

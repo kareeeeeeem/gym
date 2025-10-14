@@ -1,7 +1,10 @@
 import 'package:fitnessapp/const/utils/app_colors.dart';
+import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/activity_screen.dart';
+import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/workour_detail_view.dart' hide AppColors;
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
-import '../../../../const/common_widgets/round_button.dart';
+import '../../../../../const/common_widgets/round_button.dart';
 
 class WhatTrainRow extends StatelessWidget {
   final Map wObj;
@@ -32,7 +35,7 @@ class WhatTrainRow extends StatelessWidget {
                   children: [
                     Text(
                       wObj["title"].toString(),
-                      style: TextStyle(
+                      style: const TextStyle(
                           color: AppColors.blackColor,
                           fontSize: 14,
                           fontWeight: FontWeight.w500),
@@ -42,7 +45,7 @@ class WhatTrainRow extends StatelessWidget {
                     ),
                     Text(
                       "${wObj["exercises"].toString()} | ${ wObj["time"].toString() }" ,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.grayColor,
                         fontSize: 12,
                       ),
@@ -50,13 +53,15 @@ class WhatTrainRow extends StatelessWidget {
                     const SizedBox(
                       height: 15,
                     ),
-                    SizedBox(
-                      width: 100,
-                      height: 30,
-                      child: RoundButton(
-                          title: "View More",
-                          onPressed: () {}),
-                    )
+                    // SizedBox(
+                    //   width: 100,
+                    //   height: 30,
+                    //   child: RoundButton(
+                    //       title: "View More",
+                    //       onPressed: () {
+                    //         Navigator.push(context, MaterialPageRoute(builder: (context) => const ActivityScreen()));
+                    //       }),
+                    // )
                   ],
                 ),
               ),

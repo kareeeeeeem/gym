@@ -1,3 +1,4 @@
+import 'package:fitnessapp/view/dashboard/home/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; 
 import 'package:firebase_auth/firebase_auth.dart'; 
@@ -38,7 +39,7 @@ class YourGoalScreen extends StatelessWidget {
     return Scaffold(
         backgroundColor: AppColors.blackColor,
         appBar: AppBar(title: const Text("Goal Setting", style: TextStyle(color: AppColors.whiteColor))),
-        body: Center(child: Text("Welcome! Your profile is complete.", style: TextStyle(color: AppColors.whiteColor))),
+        body: const Center(child: Text("Welcome! Your profile is complete.", style: TextStyle(color: AppColors.whiteColor))),
     );
   }
 }
@@ -165,13 +166,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith( // 🌟 استخدام ثيم داكن لـ Date Picker
-            colorScheme: ColorScheme.dark(
+            colorScheme: const ColorScheme.dark(
               primary: AppColors.accentColor, // لون التحديد (الأخضر النعناعي)
               onPrimary: AppColors.whiteColor, 
               surface: AppColors.cardBackgroundColor, // خلفية التقويم
               onSurface: AppColors.whiteColor, // نص التقويم
-            ),
-            dialogBackgroundColor: AppColors.cardBackgroundColor,
+            ), dialogTheme: DialogThemeData(backgroundColor: AppColors.cardBackgroundColor),
           ),
           child: child!,
         );
@@ -190,14 +190,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   void saveProfile() async {
     // 💡 استخدام Mock Auth بدلاً من Firebase Auth لضمان العمل في بيئة الكانفاس
     // يمكن استبداله بـ FirebaseAuth.instance.currentUser عند الاستخدام الفعلي
-    final user = { 'uid': 'mock_user_123' }; 
-    
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: User not authenticated.')),
-      );
-      return;
-    }
+    final user = { 'uid': 'mock_user_123' };
 
     if (_selectedGender == null || _selectedDateOfBirth == null || _weightController.text.isEmpty || _heightController.text.isEmpty) {
        ScaffoldMessenger.of(context).showSnackBar(
@@ -218,7 +211,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       
       // Navigate to the next screen upon success
       if (mounted) {
-         Navigator.pushReplacementNamed(context, YourGoalScreen.routeName);
+         Navigator.pushReplacementNamed(context, DashboardScreen.routeName);
       }
     } catch (e) {
       print("Error saving profile data: $e");
@@ -249,7 +242,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     errorBuilder: (context, error, stackTrace) => const Icon(Icons.person_pin_circle, size: 100, color: AppColors.primaryColor1),
                 ),
                 const SizedBox(height: 15),
-                Text(
+                const Text(
                   "لنكمل ملفك الشخصي",
                   style: TextStyle(
                     // 🌟 تطبيق لون النص الأبيض للثيم الداكن
@@ -259,7 +252,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 5),
-                Text(
+                const Text(
                   "سيساعدنا هذا على معرفة المزيد عنك!",
                   style: TextStyle(
                     // 🌟 تطبيق لون النص الثانوي (الرمادي الفاتح) للثيم الداكن

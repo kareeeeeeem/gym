@@ -5,7 +5,10 @@ import 'package:fitnessapp/view/welcome/welcome_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart'; 
+  import 'package:google_sign_in/google_sign_in.dart';
+
 
 
 // 💡 You should import the main user screen to navigate to it after successful registration.
@@ -60,6 +63,134 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
     _confirmPasswordController.dispose();
     super.dispose();
   }
+  
+  
+//  Future<void> signInWithGoogle(BuildContext context) async {
+//   try {
+//     // ✅ الإنشاء الصحيح
+//     final GoogleSignIn googleSignIn = GoogleSignIn(
+//       scopes: ['email', 'profile'],
+//     );
+
+//     // 🔹 تسجيل الدخول
+//     final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+//     if (googleUser == null) {
+//       debugPrint("🔸 Google Sign-In cancelled by user");
+//       return;
+//     }
+
+//     // 🔹 الحصول على بيانات المصادقة
+//     final GoogleSignInAuthentication googleAuth =
+//         await googleUser.authentication;
+
+//     // 🔹 إنشاء بيانات الاعتماد لـ Firebase
+//     final credential = GoogleAuthProvider.credential(
+//       idToken: googleAuth.idToken,
+//       accessToken: googleAuth.accessToken,
+//     );
+
+//     // 🔹 تسجيل الدخول في Firebase
+//     final userCredential =
+//         await FirebaseAuth.instance.signInWithCredential(credential);
+//     final user = userCredential.user;
+
+//     if (user != null) {
+//       final userDoc = await FirebaseFirestore.instance
+//           .collection('users')
+//           .doc(user.uid)
+//           .get();
+
+//       if (!userDoc.exists) {
+//         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+//           'email': user.email?.toLowerCase(),
+//           'fullName': user.displayName,
+//           'photoUrl': user.photoURL,
+//           'isAdmin': false,
+//           'createdAt': FieldValue.serverTimestamp(),
+//         });
+//       }
+
+//       if (context.mounted) {
+//         Navigator.pushReplacementNamed(
+//             context, CompleteProfileScreen.routeName);
+//       }
+//     }
+//   } catch (e) {
+//     debugPrint("❌ Google Sign-In Error: $e");
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(content: Text('Google Sign-In failed: $e')),
+//     );
+//   }
+// }
+
+  
+  
+  
+  
+  // Sign in with Facebook
+  Future<void> _signInWithFacebook() async {
+  setState(() {
+    _isLoading = true;
+    _errorMessage = null;
+  });
+
+  try {
+    // 1️⃣ تسجيل الدخول عبر فيسبوك
+    final LoginResult result = await FacebookAuth.instance.login(
+      permissions: ['email', 'public_profile'],
+    );
+
+    if (result.status == LoginStatus.success) {
+      // 2️⃣ جلب بيانات المستخدم من فيسبوك
+      final userData = await FacebookAuth.instance.getUserData();
+      final OAuthCredential facebookAuthCredential =
+       FacebookAuthProvider.credential(result.accessToken!.tokenString);
+
+      // 3️⃣ تسجيل الدخول في Firebase باستخدام بيانات فيسبوك
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(facebookAuthCredential);
+
+      final user = userCredential.user;
+
+      if (user != null) {
+        // 4️⃣ التحقق إن كان المستخدم جديد
+        final userDoc = await _firestore.collection('users').doc(user.uid).get();
+        if (!userDoc.exists) {
+          await _firestore.collection('users').doc(user.uid).set({
+            'email': user.email?.toLowerCase(),
+            'fullName': userData['name'],
+            'isAdmin': false,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+
+        // ✅ الانتقال إلى الصفحة التالية
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, CompleteProfileScreen.routeName);
+        }
+      }
+    } else if (result.status == LoginStatus.cancelled) {
+      setState(() {
+        _errorMessage = 'Facebook login was cancelled.';
+      });
+    } else {
+      setState(() {
+        _errorMessage = result.message ?? 'Facebook login failed.';
+      });
+    }
+  } catch (e) {
+    setState(() {
+      _errorMessage = 'Facebook login error: $e';
+    });
+  } finally {
+    setState(() {
+      _isLoading = false;
+    });
+  }
+}
+
+  
 
   // Sign Up Function
   Future<void> _signUp() async {
@@ -151,7 +282,7 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 // Title and Motto
-                Text(
+                const Text(
                   'Create Your Account',
                   style: TextStyle(
                     color: AppColors.blackColor,
@@ -161,7 +292,7 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 10),
-                Text(
+                const Text(
                   'Transform Ego into Achievement. Join EGO Gym.',
                   style: TextStyle(
                     color: AppColors.grayColor,
@@ -244,13 +375,52 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
 
                 // Sign Up Button (CTA)
                 _buildSignUpButton(),
+
+                const SizedBox(height: 15),
+
+// Facebook Login Button
+ElevatedButton.icon(
+  onPressed: _isLoading ? null : _signInWithFacebook,
+  icon: const Icon(Icons.facebook, color: Colors.white),
+  label: const Text(
+    'Continue with Facebook',
+    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+  ),
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Color(0xFF1877F2), // Facebook Blue
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+    padding: const EdgeInsets.symmetric(vertical: 14),
+    elevation: 5,
+  ),
+),
+
+
+// ElevatedButton.icon(
+//   onPressed: _isLoading ? null : () => signInWithGoogle(context),
+//   icon: Image.asset(
+//     'assets/icons/google.png', // أيقونة جوجل في مجلدك
+//     height: 24,
+//   ),
+//   label: const Text(
+//     'Continue with Google',
+//     style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+//   ),
+//   style: ElevatedButton.styleFrom(
+//     backgroundColor: Colors.white,
+//     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+//     padding: const EdgeInsets.symmetric(vertical: 14),
+//     elevation: 5,
+//   ),
+// ),
+
+
                 
                 // Log In Option
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
+                    const Text(
                       'Already have an account?',
                       style: TextStyle(color: AppColors.grayColor, fontSize: 14),
                     ),
@@ -264,7 +434,7 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
                         );
                       },
 
-                      child: Text(
+                      child: const Text(
                         'Login',
                         style: TextStyle(color: AppColors.primaryColor1, fontSize: 14, fontWeight: FontWeight.bold),
                       ),
@@ -310,7 +480,7 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
       obscureText: isPassword,
       keyboardType: keyboardType,
       validator: validator,
-      style: TextStyle(color: AppColors.blackColor),
+      style: const TextStyle(color: AppColors.blackColor),
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: AppColors.primaryColor1),

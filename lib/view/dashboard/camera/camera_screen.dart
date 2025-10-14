@@ -172,18 +172,16 @@ void _takePhotoAndSave() async {
 // 3. إضافة العلامة المائية
     const String watermarkText = "Ego Gym";
     // 🔑 التعديل 1: تحسين حجم الخط ليتناسب مع معظم الصور، مع حد أقصى للحجم
-    final int fontSize = (originalImage.height / 25).round().clamp(20, 70); 
+    final int fontSize = (originalImage.height / 18).round().clamp(40, 120); 
 
     // 🔑 التعديل 2: تحديد موضع العلامة المائية في الزاوية اليمنى السفلية (مع هامش 40 بكسل)
     // لحساب عرض النص، نحتاج إلى تقدير يعتمد على نوع الخط. سنستخدم تقدير تقريبي:
-    final double charWidthFactor = 0.6; // تقدير نسبة عرض الحرف إلى ارتفاعه
+    const double charWidthFactor = 0.6; // تقدير نسبة عرض الحرف إلى ارتفاعه
     final int estimatedTextWidth = (fontSize * watermarkText.length * charWidthFactor).round();
     
-    // الموضع الأفقي: ابدأ من عرض الصورة واطرح عرض النص والهامش
-    final int textX = originalImage.width - estimatedTextWidth - 40; 
-    
-    // الموضع العمودي: ابدأ من ارتفاع الصورة واطرح ارتفاع الخط والهامش
-    final int textY = originalImage.height - fontSize - 40; 
+    // 🔹 تحديد الموضع (يمين أسفل الصورة)
+    final int textX = originalImage.width - (fontSize * 6); // ← المسافة من اليمين
+    final int textY = originalImage.height - fontSize - 50; // ← المسافة من الأسفل
 
     // 🔑 التعديل 3: استخدام لون رمادي فاتح شبه شفاف (للحصول على تأثير "مطبوع")
     // بما أن img.drawString لا تدعم الشفافية، نستخدم لون فاتح بديل للأبيض.
@@ -320,7 +318,7 @@ InkWell(
         alignment: Alignment.center,
         child: Text(
             _isPermissionRequesting ? "جارٍ الطلب..." : "طلب الإذن/فتح الإعدادات",
-            style: TextStyle(
+            style: const TextStyle(
                 color: AppColors.whiteColor,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

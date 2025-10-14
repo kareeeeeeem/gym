@@ -1,15 +1,12 @@
 import 'package:fitnessapp/const/utils/app_colors.dart';
-import 'package:fitnessapp/view/dashboard/activity/widgets/upcoming_workout_row.dart';
-import 'package:fitnessapp/view/dashboard/activity/widgets/what_train_row.dart';
+import 'package:fitnessapp/view/dashboard/activity/WorkoutLogPage.dart';
+import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/upcoming_workout_row.dart';
+import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/what_train_row.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import '../../../const/common_widgets/round_button.dart';
-import '../../workour_detail_view/workour_detail_view.dart';
-
-// تعريف الألوان الجديدة لتطبيق ثيم Ego Gym (ماروني وذهبي)
-// ملاحظة: بما أن ملف AppColors غير متاح، سأقوم بتعريف الألوان مباشرة هنا للاستخدام الفوري.
-// في بيئة الإنتاج، يجب تعديل ملف AppColors.dart الأصلي.
+import '../../../../../const/common_widgets/round_button.dart';
+import 'workour_detail_view.dart';
 
 class ActivityAppColors {
   static const Color whiteColor = Color(0xFFFFFFFF);
@@ -21,7 +18,7 @@ class ActivityAppColors {
   // تدرج جديد يمزج بين الماروني والذهبي
   static List<Color> primaryG = [
     primaryColor1,
-    Color(0xFFCC5500), // لون بيني
+    const Color(0xFFCC5500), // لون بيني
   ];
 }
 
@@ -92,7 +89,15 @@ class _ActivityScreenState extends State<ActivityScreen> {
               ),
               actions: [
                 InkWell(
-                  onTap: () {},
+                  onTap: () {
+                     Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => MyTrainsPage(
+                                              
+                                            )));
+                          
+                  },
                   child: Container(
                     margin: const EdgeInsets.all(8),
                     height: 40,
@@ -193,80 +198,16 @@ class _ActivityScreenState extends State<ActivityScreen> {
                              borderRadius: BorderRadius.circular(3)),
                        ),
                     ),
+
                     SizedBox(
                       height: media.width * 0.05,
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 15, horizontal: 15),
-                      decoration: BoxDecoration(
-                        // خلفية فاتحة للجدول اليومي
-                        color: ActivityAppColors.primaryColor1.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "Daily Workout Schedule",
-                            style: TextStyle(
-                                color: ActivityAppColors.blackColor,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700),
-                          ),
-                          SizedBox(
-                            width: 70,
-                            height: 25,
-                            child: RoundButton(
-                              title: "Check",
-                              // ✅ FIX 2: تم استبدال 'gradientColors' بـ 'colors' لحل مشكلة المعامل غير المعرّف
-                              onPressed: () {
-                                // لا يوجد انتقال محدد، نتركها فارغة مؤقتاً
-                              },
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                    SizedBox(
-                      height: media.width * 0.05,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Upcoming Workout",
-                          style: TextStyle(
-                              color: ActivityAppColors.blackColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700),
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          child: const Text(
-                            "See More",
-                            style: TextStyle(
-                                color: ActivityAppColors.darkGrayColor, // لون رمادي داكن
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700),
-                          ),
-                        )
-                      ],
-                    ),
-                    ListView.builder(
-                        padding: EdgeInsets.zero,
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: latestArr.length,
-                        itemBuilder: (context, index) {
-                          var wObj = latestArr[index] as Map? ?? {};
-                          return UpcomingWorkoutRow(wObj: wObj);
-                        }),
+
                     SizedBox(
                       height: media.width * 0.05,
                     ),
                     const Text( // تم تعديل Row إلى Text مباشرة لعدم وجود عنصر آخر للمقارنة
-                      "What Do You Want to Train",
+                      "What Do You Want to Train:",
                       style: TextStyle(
                           color: ActivityAppColors.blackColor,
                           fontSize: 16,
@@ -454,8 +395,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
     return SideTitleWidget(
       space: 10,
-      child: text,
-      meta: meta, 
+      meta: meta,
+      child: text, 
     );
   }
 }

@@ -45,7 +45,7 @@ class _AddScheduleViewState extends State<AddScheduleView> {
             ),
           ),
         ),
-        title: Text(
+        title: const Text(
           "Add Schedule",
           style: TextStyle(
               color: AppColors.blackColor, fontSize: 16, fontWeight: FontWeight.w700),
@@ -87,14 +87,14 @@ class _AddScheduleViewState extends State<AddScheduleView> {
               ),
               Text(
                 dateToString(widget.date, formatStr: "E, dd MMMM yyyy"),
-                style: TextStyle(color: AppColors.grayColor, fontSize: 14),
+                style: const TextStyle(color: AppColors.grayColor, fontSize: 14),
               ),
             ],
           ),
           const SizedBox(
             height: 20,
           ),
-          Text(
+          const Text(
             "Time",
             style: TextStyle(
                 color: AppColors.blackColor, fontSize: 14, fontWeight: FontWeight.w500),
@@ -112,7 +112,7 @@ class _AddScheduleViewState extends State<AddScheduleView> {
           const SizedBox(
             height: 20,
           ),
-          Text(
+          const Text(
             "Details Workout",
             style: TextStyle(
                 color: AppColors.blackColor, fontSize: 14, fontWeight: FontWeight.w500),
@@ -153,7 +153,7 @@ class _AddScheduleViewState extends State<AddScheduleView> {
               time: "",
               color: AppColors.lightGrayColor,
               onPressed: () {}),
-          Spacer(),
+          const Spacer(),
           RoundGradientButton(title: "Save", onPressed: () {}),
           const SizedBox(
             height: 20,

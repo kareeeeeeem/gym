@@ -17,7 +17,7 @@ class ExercisesSetSection extends StatelessWidget {
       children: [
         Text(
           sObj["name"].toString(),
-          style: TextStyle(
+          style: const TextStyle(
               color: AppColors.blackColor, fontSize: 12, fontWeight: FontWeight.w500),
         ),
         const SizedBox(

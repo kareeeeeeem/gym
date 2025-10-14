@@ -1,3 +1,5 @@
+import 'package:fitnessapp/view/dashboard/profile/ContactUsView.dart';
+import 'package:fitnessapp/view/dashboard/profile/kareemEmda.dart';
 import 'package:fitnessapp/view/dashboard/profile/sendNotifiactions.dart';
 import 'package:fitnessapp/view/welcome/on_boarding/start_screen.dart';
 import 'package:flutter/material.dart';
@@ -463,7 +465,7 @@ class SettingView extends StatefulWidget {
 
 class _SettingViewState extends State<SettingView> {
   // ... (Logic remains the same, relies on PlaceholderPage scrolling) ...
-  bool _darkModeEnabled = true; 
+  final bool _darkModeEnabled = true; 
 
   void _showInternalSnackbar(BuildContext context, String action) {
      ScaffoldMessenger.of(context).showSnackBar(
@@ -836,130 +838,7 @@ void _showLinkAction(BuildContext context, String linkType, String url) async {
     }
 }
 
-class ContactUsView extends StatelessWidget {
-  // ... (Constants remain the same) ...
-  static const String gymSlogan = "Get strong with us! Your journey begins now. 💪🌟";
-  static const String gymWhatsApp = "01005235831"; 
-  static const String gymPhone = "01005235831";
-  static const String gymEmail = "egogym.banha@gmail.com";
-  static const String gymFacebook = "@egoo.gym (4.4k followers)";
-  static const String gymLocationAddress = "Street 2, Qism Banha, Second Banha, Before Al-Fahs Bridge in front of Othaim Ego Gym, Benha, Egypt";
-  static const String gymLocationLink = "https://bit.ly/egogym-location";
 
-  const ContactUsView({super.key});
-
-
-  @override
-  Widget build(BuildContext context) {
-    return PlaceholderPage(
-      title: "Contact Ego Gym",
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Gym Information:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
-          const SizedBox(height: 10),
-          const Text(
-            gymSlogan,
-            style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: AppColors.accentColor), 
-          ),
-          const Divider(color: AppColors.lightGrayColor, height: 30),
-          
-          const Text('Contact Details:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
-          const SizedBox(height: 10),
-          ContentRow(
-            label: "WhatsApp", 
-            value: gymWhatsApp, 
-            onTap: () => _showLinkAction(context, "WhatsApp", "whatsapp://send?phone=+2${gymWhatsApp.replaceAll(' ', '')}") 
-          ),
-          ContentRow(label: "Phone", value: gymPhone, onTap: () => _showLinkAction(context, "Phone Call", "tel:$gymPhone")),
-          ContentRow(label: "Email", value: gymEmail, onTap: () => _showLinkAction(context, "Email", "mailto:$gymEmail")),
-          ContentRow(label: "Facebook Handle", value: gymFacebook, onTap: () => _showLinkAction(context, "Facebook", "https://facebook.com/egoo.gym")),
-          const Divider(color: AppColors.lightGrayColor, height: 30),
-
-          const Text('Location:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
-          const SizedBox(height: 10),
-          const ContentRow(label: "Address", value: gymLocationAddress),
-          ContentRow(label: "Google Maps Link", value: "Open Location", onTap: () => _showLinkAction(context, "Google Maps", gymLocationLink)),
-          const SizedBox(height: 30),
-          
-          RoundButton(
-            title: "Visit Gym Location",
-            type: RoundButtonType.primaryBG,
-            onPressed: () => _showLinkAction(context, "Gym Location", gymLocationLink),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// =========================================================================
-// 7. HowUsView (About the Developer - Kareem Emad)
-// =========================================================================
-class HowUsView extends StatelessWidget {
-  // ... (Constants remain the same) ...
-  static const String developerName = " kareem emad";
-  static const String developerTitle = "developer";
-  static const String devEmail = "kareememad852@gmail.com"; 
-  static const String devPhone = "01554327428"; 
-  static const String devLinkedIn = "linkedin.com/in/kareem emad 651893219"; 
-  static const String devGitHub = "github.com/karecccceem"; 
-  static const String devBehance = "behance.net/kareememad15"; 
-  
-  @override
-  Widget build(BuildContext context) {
-    return PlaceholderPage(
-      title: "About the Developer (How Us)",
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-               CircleAvatar(
-                radius: 30,
-                backgroundColor: AppColors.accentColor,
-                child: Text('KE', style: const TextStyle(fontSize: 24, color: AppColors.blackColor, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(width: 15),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(developerName, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.whiteColor)),
-                  const Text(developerTitle, style: TextStyle(fontSize: 14, color: AppColors.primaryColor)),
-                ],
-              ),
-            ],
-          ),
-          const Divider(color: AppColors.lightGrayColor, height: 30),
-          
-          const Text('Professional Summary:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
-          const SizedBox(height: 10),
-          const Text(
-           '',
-            style: TextStyle(fontSize: 14, color: AppColors.darkGrayColor),
-          ),
-          
-          const Divider(color: AppColors.lightGrayColor, height: 30),
-
-          const Text('Contact & Portfolio:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
-          const SizedBox(height: 10),
-          ContentRow(label: "Email", value: devEmail, onTap: () => _showLinkAction(context, "Email", "mailto:$devEmail")),
-          ContentRow(label: "Phone", value: devPhone, onTap: () => _showLinkAction(context, "Phone Call", "tel:$devPhone")),
-          ContentRow(label: "LinkedIn", value: "Open Profile", onTap: () => _showLinkAction(context, "LinkedIn", "https://$devLinkedIn")),
-          ContentRow(label: "GitHub", value: "View Repos", onTap: () => _showLinkAction(context, "GitHub", "https://$devGitHub")),
-          ContentRow(label: "Behance (Design)", value: "View Projects", onTap: () => _showLinkAction(context, "Behance", "https://$devBehance")),
-
-          const SizedBox(height: 30),
-          RoundButton(
-            title: "Hire for Mobile/Web Development",
-            type: RoundButtonType.primaryBG,
-            onPressed: () => _showLinkAction(context, "Email", "mailto:$devEmail"),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // =========================================================================
 // 8. UserProfile Code (Final Fixes and Data Loading - FIXED)
@@ -1049,7 +928,7 @@ void _fetchUserData() async {
       Map<String, dynamic> data = userDoc.data() ?? {};
       
       // دالة مساعدة لضمان قراءة البيانات بشكل آمن كـ String
-      String _readAsString(dynamic value, String defaultValue) {
+      String readAsString(dynamic value, String defaultValue) {
         if (value == null) return defaultValue;
         return value.toString();
       }
@@ -1061,16 +940,16 @@ void _fetchUserData() async {
           _isAdmin = isFirebaseAdmin; 
           
           // ✅ جلب وتعبئة جميع البيانات الشخصية باستخدام الدالة الآمنة
-          _fullName = _readAsString(data['fullName'], defaultName);
-          _goal = _readAsString(data['goal'], '---');
-          _height = _readAsString(data['height'], '---');
-          _weight = _readAsString(data['weight'], '---');
-          _age = _readAsString(data['age'], '---');
-          _dob = _readAsString(data['dob'], '---');
-          _gender = _readAsString(data['gender'], '---');
+          _fullName = readAsString(data['fullName'], defaultName);
+          _goal = readAsString(data['goal'], '---');
+          _height = readAsString(data['height'], '---');
+          _weight = readAsString(data['weight'], '---');
+          _age = readAsString(data['age'], '---');
+          _dob = readAsString(data['dob'], '---');
+          _gender = readAsString(data['gender'], '---');
           
           // 💡 القيمة الأساسية للإيميل هي من Firestore، مع العودة إلى Firebase Auth كاحتياط
-          _email = _readAsString(data['email'], userEmail); 
+          _email = readAsString(data['email'], userEmail); 
 
           _isLoading = false;
           print('DEBUG_FETCH: Data loaded successfully. IsAdmin: $_isAdmin, Email: $_email');
@@ -1180,7 +1059,10 @@ void _fetchUserData() async {
       ),
       body: SingleChildScrollView( // 💡 هذا يضمن التمرير
         padding: const EdgeInsets.all(25),
+        
         child: Column(
+
+          mainAxisSize: MainAxisSize.min, // 💡 أضف هذه الخاصية
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // User Image 
@@ -1275,12 +1157,12 @@ void _fetchUserData() async {
                 children: [
                   const Text("Notification & Settings", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
                   const Divider(color: AppColors.lightGrayColor, height: 20),
-                  SettingRow(
-                    iconData: Icons.notifications, 
-                    title: "Push Notifications", 
-                    onPressed: () => _showInternalSnackbar(context, "Notifications Toggle"), 
-                    trailing: Switch(value: true, onChanged: (val) { _showInternalSnackbar(context, "Notifications: ${val ? 'ON' : 'OFF'}"); }, activeColor: AppColors.accentColor),
-                  ),
+                  // SettingRow(
+                  //   iconData: Icons.notifications, 
+                  //   title: "Push Notifications", 
+                  //   onPressed: () => _showInternalSnackbar(context, "Notifications Toggle"), 
+                  //   trailing: Switch(value: true, onChanged: (val) { _showInternalSnackbar(context, "Notifications: ${val ? 'ON' : 'OFF'}"); }, activeColor: AppColors.accentColor),
+                  // ),
                   SettingRow(
                     iconData: Icons.settings, 
                     title: "Settings", 
@@ -1291,7 +1173,7 @@ void _fetchUserData() async {
                   ),
                   SettingRow(
                     iconData: Icons.call, 
-                    title: "Contact Ego Gym", 
+                    title: "About Ego Gym", 
                     onPressed: () {
                        Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactUsView()));
                     }
@@ -1300,7 +1182,7 @@ void _fetchUserData() async {
                     iconData: Icons.code, 
                     title: "About the Developer", 
                     onPressed: () {
-                       Navigator.push(context, MaterialPageRoute(builder: (context) =>  HowUsView()));
+                       Navigator.push(context, MaterialPageRoute(builder: (context) =>  const HowUsView()));
                     }
                   ),
                 ],
@@ -1309,6 +1191,16 @@ void _fetchUserData() async {
           ],
         ),
       ),
+      bottomNavigationBar: const BottomAppBar(
+        color: Colors.transparent, 
+        elevation: 0, // نلغي الظل
+        height:  10, // ارتفاع بسيط ليرفع الزر قليلاً
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: <Widget>[], // لا توجد عناصر فعلية
+        ),
+      ),    
     );
   }
 }

@@ -230,7 +230,7 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
                     BarChartData(
                       barTouchData: BarTouchData(
                         touchTooltipData: BarTouchTooltipData(
- tooltipBorder: BorderSide(
+ tooltipBorder: const BorderSide(
     color: Colors.grey, // 🌟 هنا يتم تمرير اللون
     width: 1.0,        // 💡 يمكنك تحديد سمك الحافة
   ),                          tooltipHorizontalAlignment: FLHorizontalAlignment.right,
@@ -297,10 +297,10 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
                       ),
                       titlesData: FlTitlesData(
                         show: true,
-                        rightTitles:  AxisTitles(
+                        rightTitles:  const AxisTitles(
                           sideTitles: SideTitles(showTitles: false),
                         ),
-                        topTitles:  AxisTitles(
+                        topTitles:  const AxisTitles(
                           sideTitles: SideTitles(showTitles: false),
                         ),
                         bottomTitles: AxisTitles(
@@ -310,7 +310,7 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
                             reservedSize: 38,
                           ),
                         ),
-                        leftTitles:  AxisTitles(
+                        leftTitles:  const AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: false,
                           ),
@@ -320,7 +320,7 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
                         show: false,
                       ),
                       barGroups: showingGroups(),
-                      gridData:  FlGridData(show: false),
+                      gridData:  const FlGridData(show: false),
                     )
 
                 ),
@@ -405,8 +405,8 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
       return SideTitleWidget(
       // 🌟 قم بإزالة 'axisSide: meta.axisSide'
       space: 10,
-      child: text,
-      meta: meta, // 🌟 يجب تمرير 'meta' كمعلمة مسماة (Named Parameter) إذا كانت المكتبة تتوقعها
+      meta: meta,
+      child: text, // 🌟 يجب تمرير 'meta' كمعلمة مسماة (Named Parameter) إذا كانت المكتبة تتوقعها
     );
   }
 

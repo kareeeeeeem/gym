@@ -25,7 +25,7 @@ class AddAdminsView extends StatelessWidget {
 
     // إظهار رسالة "قيد التنفيذ"
     scaffoldMessenger.showSnackBar(
-      SnackBar(content: Text('⏳ جاري تعيين ${emailTrimmed} كمدير...'), duration: const Duration(seconds: 5)),
+      SnackBar(content: Text('⏳ جاري تعيين $emailTrimmed كمدير...'), duration: const Duration(seconds: 5)),
     );
     
     try {
@@ -40,7 +40,7 @@ class AddAdminsView extends StatelessWidget {
 
         // 🥳 النجاح
         scaffoldMessenger.showSnackBar(
-            SnackBar(content: Text('✅ تم تعيين ${emailTrimmed} كمدير بنجاح!'))
+            SnackBar(content: Text('✅ تم تعيين $emailTrimmed كمدير بنجاح!'))
         );
         // العودة إلى الشاشة السابقة بعد النجاح
         if (context.mounted) {
@@ -55,7 +55,7 @@ class AddAdminsView extends StatelessWidget {
     } catch (e) {
         // خطأ عام
         scaffoldMessenger.showSnackBar(
-            SnackBar(content: Text('❌ حدث خطأ غير متوقع. جرب مجدداً.'))
+            const SnackBar(content: Text('❌ حدث خطأ غير متوقع. جرب مجدداً.'))
         );
     }
   }

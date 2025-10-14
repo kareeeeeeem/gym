@@ -5,8 +5,9 @@ import 'package:fitnessapp/aus/signup/signup_screen.dart';
 import 'package:fitnessapp/view/welcome/welcome_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 // 💡 Import the sign-up screen to enable navigation
-
+import 'package:google_sign_in/google_sign_in.dart'; // ⬅️ تأكد من استيراد GoogleSignIn إذا كنت ستستخدمها لاحقًا
 
 // =========================================================================
 // 1. Colors and Utility Components
@@ -39,10 +40,10 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _firestore = FirebaseFirestore.instance; // ⬅️ تم إضافته
+  
   bool _isLoading = false;
   String? _errorMessage;
-  final _firestore = FirebaseFirestore.instance; // ⬅️ أضف هذا السطر
-
 
   @override
   void dispose() {
@@ -50,6 +51,126 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
+
+  // =========================================================================
+  // 3. Password Reset Logic
+  // =========================================================================
+Future<void> _signInWithFacebook() async {
+  try {
+    final LoginResult result = await FacebookAuth.instance.login();
+
+    if (result.status == LoginStatus.success) {
+      final OAuthCredential facebookAuthCredential =
+          FacebookAuthProvider.credential(result.accessToken!.tokenString);
+
+      await FirebaseAuth.instance.signInWithCredential(facebookAuthCredential);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const DashboardScreen(cameras: [],)),
+      );
+    } else {
+      print("Facebook login failed: ${result.message}");
+    }
+  } catch (e) {
+    print("Error during Facebook login: $e");
+  }
+}
+
+  // دالة إرسال رابط إعادة تعيين كلمة المرور - (Forgot Password)
+  Future<void> _resetPassword(String email) async {
+    try {
+      // 💡 الدالة الأساسية لإرسال الرابط
+      await _auth.sendPasswordResetEmail(email: email); 
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password reset link sent to your email!'),
+            backgroundColor: AppColors.primaryColor1,
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'Error: Failed to send reset email.';
+      if (e.code == 'user-not-found') {
+        message = 'No user found for that email.';
+      } else if (e.code == 'invalid-email') {
+        message = 'The email address is not valid.';
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.redColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An unexpected error occurred: $e'),
+            backgroundColor: AppColors.redColor,
+          ),
+        );
+      }
+    }
+  }
+
+  // دالة مساعدة لعرض مربع حوار نسيان كلمة المرور
+  void _showForgotPasswordDialog(BuildContext context) {
+    final TextEditingController emailResetController = TextEditingController();
+    final dialogFormKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Reset Password'),
+          content: Form(
+            key: dialogFormKey,
+            child: TextFormField(
+              controller: emailResetController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                hintText: 'Enter your email',
+                prefixIcon: const Icon(Icons.email),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty || !value.contains('@')) {
+                  return 'Please enter a valid email';
+                }
+                return null;
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.grayColor)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (dialogFormKey.currentState!.validate()) {
+                  Navigator.of(context).pop(); // إغلاق مربع الحوار
+                  // استدعاء دالة إرسال الإيميل
+                  _resetPassword(emailResetController.text.trim()); 
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryColor1),
+              child: const Text('Send Reset Link', style: TextStyle(color: AppColors.whiteColor)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // =========================================================================
+  // 4. Authentication Logic
+  // =========================================================================
 
   // Sign In function (Added to ensure user data is updated/merged on login)
   Future<void> _login() async {
@@ -72,25 +193,23 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
       final User? user = userCredential.user;
 
       if (user != null) {
-          // 🔑 الخطوة الحاسمة: تحديث/دمج بيانات المستخدم في Firestore
-          // هذا يضمن أن المستخدمين القدامى لديهم حقل 'email' في وثيقتهم لتجنب أخطاء البحث عن الأدمن.
+          // 🔑 تحديث/دمج بيانات المستخدم في Firestore
           await _firestore.collection('users').doc(user.uid).set({
             'email': user.email!.toLowerCase(), 
-            // يمكن إضافة تحديثات أخرى هنا، مثل آخر وقت دخول 'lastLogin': FieldValue.serverTimestamp()
           }, SetOptions(merge: true));
       }
 
 
       // Authentication successful, navigate to the main user screen
       if (mounted) {
-        // 💡 Navigate to the main user screen (DashboardScreen in this context)
-// ✅ الاستخدام الصحيح لـ MaterialPageRoute
-Navigator.of(context).pushAndRemoveUntil(
-  MaterialPageRoute(
-    builder: (context) => const DashboardScreen(cameras: [],), // ⬅️ بناء المسار الجديد (المعامل الأول)
-  ),
-  (Route<dynamic> route) => false, // ⬅️ شرط الإزالة (المعامل الثاني): أزل كل شيء
-);      }
+        // ✅ الانتقال إلى شاشة Dashboard وإزالة جميع المسارات السابقة
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const DashboardScreen(cameras: [],),
+          ),
+          (Route<dynamic> route) => false, 
+        );      
+      }
       
     } on FirebaseAuthException catch (e) {
       String message = 'Login error. Please try again.';
@@ -119,9 +238,12 @@ Navigator.of(context).pushAndRemoveUntil(
     Navigator.of(context).pushNamed(UserSignUpScreen.routeName);
   }
 
+  // =========================================================================
+  // 5. Build Method (UI)
+  // =========================================================================
+
   @override
   Widget build(BuildContext context) {
-    // Removed Directionality(textDirection: TextDirection.rtl) for English LTR layout
     return Scaffold(
       backgroundColor: AppColors.whiteColor, 
       body: Center(
@@ -134,7 +256,7 @@ Navigator.of(context).pushAndRemoveUntil(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 // EGO Logo/Title
-                Text(
+                const Text(
                   'EGO',
                   style: TextStyle(
                     color: AppColors.primaryColor1,
@@ -144,7 +266,7 @@ Navigator.of(context).pushAndRemoveUntil(
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 5),
-                Text(
+                const Text(
                   'Welcome back! Unleash your inner strength.',
                   style: TextStyle(
                     color: AppColors.blackColor,
@@ -154,7 +276,7 @@ Navigator.of(context).pushAndRemoveUntil(
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 10),
-                 Text(
+                 const Text(
                   'Sign in to start your daily workout',
                   style: TextStyle(
                     color: AppColors.grayColor,
@@ -198,9 +320,10 @@ Navigator.of(context).pushAndRemoveUntil(
                   alignment: Alignment.centerRight, // Changed alignment for LTR
                   child: TextButton(
                     onPressed: () {
-                      // 💡 TODO: Implement forgot password functionality
+                      // 💡 التعديل هنا: استدعاء دالة عرض مربع الحوار
+                      _showForgotPasswordDialog(context);
                     },
-                    child: Text(
+                    child: const Text(
                       'Forgot your password?',
                       style: TextStyle(color: AppColors.grayColor, fontSize: 14),
                     ),
@@ -222,19 +345,38 @@ Navigator.of(context).pushAndRemoveUntil(
 
                 // Login button
                 _buildLoginButton(),
+
+                const SizedBox(height: 15),
+
+// Facebook Login Button
+ElevatedButton.icon(
+  onPressed: _isLoading ? null : _signInWithFacebook,
+  icon: const Icon(Icons.facebook, color: Colors.white),
+  label: const Text(
+    'Continue with Facebook',
+    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+  ),
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Color(0xFF1877F2), // Facebook Blue
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+    padding: const EdgeInsets.symmetric(vertical: 14),
+    elevation: 5,
+  ),
+),
+
                 
                 // Sign Up option
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
+                    const Text(
                       "Don't have an account yet?",
                       style: TextStyle(color: AppColors.grayColor, fontSize: 14),
                     ),
                     TextButton(
                       onPressed: _goToSignUpScreen,
-                      child: Text(
+                      child: const Text(
                         'Register Now',
                         style: TextStyle(color: AppColors.primaryColor1, fontSize: 14, fontWeight: FontWeight.bold),
                       ),
@@ -279,7 +421,7 @@ Navigator.of(context).pushAndRemoveUntil(
       obscureText: isPassword,
       keyboardType: keyboardType,
       validator: validator,
-      style: TextStyle(color: AppColors.blackColor), 
+      style: const TextStyle(color: AppColors.blackColor), 
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: AppColors.primaryColor1), 

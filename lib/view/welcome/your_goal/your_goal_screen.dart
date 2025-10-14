@@ -184,7 +184,7 @@ class RoundGradientButton extends StatelessWidget {
           BoxShadow(
             color: AppColors.primaryColor2.withOpacity(0.5),
             blurRadius: 10,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ] : null,
       ),

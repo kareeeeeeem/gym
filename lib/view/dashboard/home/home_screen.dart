@@ -8,7 +8,7 @@ import 'package:fitnessapp/view/dashboard/profile/user_profile.dart' hide AppCol
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart'; 
 
-import 'package:fitnessapp/view/dashboard/activity/activity_screen.dart'; 
+import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/activity_screen.dart'; 
 
 // =========================================================================
 // تم إزالة تعريف AppColors.

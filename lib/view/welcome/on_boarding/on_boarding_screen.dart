@@ -1,8 +1,6 @@
-import 'package:fitnessapp/const/utils/app_colors.dart';
-import 'package:fitnessapp/view/dashboard/dashboard_screen.dart';
-import 'package:fitnessapp/view/dashboard/home/home_screen.dart' hide DashboardScreen;
-import 'package:fitnessapp/view/welcome/on_boarding/widgets/pager_widget.dart';
 import 'package:fitnessapp/aus/signup/signup_screen.dart';
+import 'package:fitnessapp/view/dashboard/dashboard_screen.dart';
+import 'package:fitnessapp/view/welcome/on_boarding/widgets/pager_widget.dart';
 import 'package:flutter/material.dart';
 
 class OnBoardingScreen extends StatefulWidget {
@@ -93,18 +91,27 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                       size: 50,
                     ),
                     onPressed: () {
-                      if (selectedIndex < 3) {
-                        selectedIndex = selectedIndex + 1;
-                        pageController.animateToPage(selectedIndex,
-                            duration: const Duration(milliseconds: 700),
-                            curve: Curves.easeInSine);
-                      }
-                      Navigator.push(
-  context,
-  MaterialPageRoute(builder: (context) => const DashboardScreen(cameras: [],)),
-);
+  if (selectedIndex < pageList.length - 1) {
+    // لو لسه مش في آخر صفحة → انتقل للصفحة التالية
+    setState(() {
+      selectedIndex++;
+    });
+    pageController.animateToPage(
+      selectedIndex,
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeInOut,
+    );
+  } else {
+    // ✅ لو وصلت لآخر صفحة → روح على صفحة التسجيل (SignupScreen)
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const UserSignUpScreen()),
+    );
+  }
+},
 
-                    },
+
+                    
                   ),
                 ),
               ],

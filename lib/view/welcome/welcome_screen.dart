@@ -1,6 +1,5 @@
 import 'package:fitnessapp/const/utils/app_colors.dart';
 import 'package:fitnessapp/view/dashboard/dashboard_screen.dart';
-import 'package:fitnessapp/aus/signup/signup_screen.dart' hide AppColors;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // استيراد Firebase Auth
 

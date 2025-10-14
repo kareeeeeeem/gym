@@ -72,7 +72,6 @@
             android:name="onesignal_app_id"
             android:value="e17ceb1e-09d4-41d4-aee4-91cdee1b1d6b" />
 
-        <!-- 🟢 قناة الإشعارات الافتراضية (تضمن عرض الإشعارات بشكل صحيح) -->
         <meta-data
             android:name="com.onesignal.NotificationChannelName"
             android:value="High Importance Notifications" />
@@ -83,11 +82,38 @@
 
         <meta-data
             android:name="com.onesignal.NotificationChannelImportance"
-            android:value="4" /> <!-- 4 = Importance.max -->
+            android:value="4" />
+
+        <!-- ========================================================= -->
+        <!-- 🟦 إعدادات Facebook SDK -->
+        <!-- ========================================================= -->
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id" />
+        <meta-data
+            android:name="com.facebook.sdk.ClientToken"
+            android:value="@string/facebook_client_token" />
+
+        <activity
+            android:name="com.facebook.FacebookActivity"
+            android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+            android:label="@string/app_name" />
+
+        <activity
+            android:name="com.facebook.CustomTabActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="@string/fb_login_protocol_scheme" />
+            </intent-filter>
+        </activity>
+
     </application>
 
     <!-- ========================================================= -->
-    <!-- 🔍 Queries لازمة لبعض العمليات (مثلاً التعامل مع النصوص) -->
+    <!-- 🔍 Queries لازمة لبعض العمليات -->
     <!-- ========================================================= -->
     <queries>
         <intent>
@@ -95,4 +121,5 @@
             <data android:mimeType="text/plain" />
         </intent>
     </queries>
+
 </manifest>

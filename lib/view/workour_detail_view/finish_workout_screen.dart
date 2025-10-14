@@ -31,7 +31,7 @@ class FinishWorkoutScreen extends StatelessWidget {
                 height: 20,
               ),
 
-              Text(
+              const Text(
                 "Congratulations, You Have Finished Your Workout",
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -45,7 +45,7 @@ class FinishWorkoutScreen extends StatelessWidget {
                 height: 20,
               ),
 
-              Text(
+              const Text(
                 "Exercises is king and nutrition is queen. Combine the two and you will have a kingdom",
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -58,7 +58,7 @@ class FinishWorkoutScreen extends StatelessWidget {
                 height: 8,
               ),
 
-              Text(
+              const Text(
                 "-Jack Lalanne",
                 textAlign: TextAlign.center,
                 style: TextStyle(
