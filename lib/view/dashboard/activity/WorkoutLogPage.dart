@@ -1,925 +1,472 @@
-import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
-import 'dart:math';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
-// ======================================================================
-// 0. Global Color & Style Definitions 
-// ======================================================================
+// -----------------------------------------------------------------------------
+// Data Models
+// -----------------------------------------------------------------------------
 
-const Color primaryGradientStart = Color(0xFFF77737); // Orange-Pink
-const Color primaryGradientEnd = Color(0xFFC13584); // Purple-Pink
-const Color cardBackground = Colors.white; 
-const Color textDark = Color(0xFF1E1E1E); // Nearly black for high contrast
-const Color textMuted = Color(0xFF5A5A5A); // Dark gray for secondary text
-const Color accentSuccess = Color(0xFF1DB954); // Green for log/success
-
-LinearGradient getPrimaryGradient() {
-  return const LinearGradient(
-    colors: [primaryGradientStart, primaryGradientEnd],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-}
-
-LinearGradient getLightGradient() {
-  return LinearGradient(
-    colors: [primaryGradientEnd.withOpacity(0.1), primaryGradientStart.withOpacity(0.1)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-}
-
-// ======================================================================
-// 1. Data Models 
-// ======================================================================
-
-class SetEntry {
-  final int setNumber;
-  final double weight;
-  final int reps;
-  final double e1RM;
-  final int rpe;
-  final double volume;
-
-  SetEntry({
-    required this.setNumber,
-    required this.weight,
-    required this.reps,
-    required this.e1RM,
-    required this.rpe,
-    required this.volume,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'setNumber': setNumber,
-        'weight': weight,
-        'reps': reps,
-        'e1RM': e1RM,
-        'rpe': rpe,
-        'volume': volume,
-      };
-
-  factory SetEntry.fromJson(Map<String, dynamic> json) => SetEntry(
-        setNumber: json['setNumber'] as int,
-        weight: (json['weight'] as num).toDouble(),
-        reps: (json['reps'] as num).toInt(),
-        e1RM: (json['e1RM'] as num).toDouble(),
-        rpe: (json['rpe'] as num).toInt(),
-        volume: (json['volume'] as num).toDouble(),
-      );
-}
-
-class ExerciseLog {
-  final String id; 
-  final String exerciseName;
-  final String date;
-  List<SetEntry> sets;
-  double personalRecordWeight;
-  double totalVolume;
-
-  ExerciseLog({
-    required this.id,
-    required this.exerciseName,
-    required this.date,
-    required this.sets,
-    required this.personalRecordWeight,
-    required this.totalVolume,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'exerciseName': exerciseName,
-        'date': date,
-        'sets': sets.map((s) => s.toJson()).toList(),
-        'personalRecordWeight': personalRecordWeight,
-        'totalVolume': totalVolume,
-      };
-
-  factory ExerciseLog.fromJson(Map<String, dynamic> json) => ExerciseLog(
-        id: json['id'] as String,
-        exerciseName: json['exerciseName'] as String,
-        date: json['date'] as String,
-        sets: (json['sets'] as List)
-            .map((s) => SetEntry.fromJson(s as Map<String, dynamic>))
-            .toList(),
-        personalRecordWeight: (json['personalRecordWeight'] as num).toDouble(),
-        totalVolume: (json['totalVolume'] as num).toDouble(),
-      );
-}
-
-class ExerciseTemplate {
-  final String name; 
-  final String muscleGroup; 
-
-  ExerciseTemplate({
-    required this.name,
-    required this.muscleGroup,
-  });
-
-  Map<String, dynamic> toJson() => {
-    'name': name,
-    'muscleGroup': muscleGroup,
-  };
-
-  factory ExerciseTemplate.fromJson(Map<String, dynamic> json) => ExerciseTemplate(
-    name: json['name'] as String,
-    muscleGroup: json['muscleGroup'] as String,
-  );
-  
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ExerciseTemplate &&
-          runtimeType == other.runtimeType &&
-          name == other.name;
-
-  @override
-  int get hashCode => name.hashCode;
-}
-
-class WorkoutTemplate {
+class Exercise {
   final String name;
-  final List<ExerciseTemplate> exercises;
-  final String iconAsset; 
-  final int durationMinutes;
+  final int sets;
+  final String reps;
+  int currentSet;
+  final String initialWeight;
+  final List<String> actualWeights;
 
-  WorkoutTemplate({
+  Exercise({
     required this.name,
-    required this.exercises,
-    required this.iconAsset,
-    required this.durationMinutes,
-  });
+    required this.sets,
+    required this.reps,
+    required this.initialWeight,
+    this.currentSet = 1,
+    List<String>? actualWeights,
+  }) : actualWeights = actualWeights ?? List.filled(sets, initialWeight);
+
+  factory Exercise.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> weightsList = json['actualWeights'] ?? [];
+    final initialWeight = json['initialWeight'] as String? ?? '0kg';
+
+    return Exercise(
+      name: json['name'] as String,
+      sets: (json['sets'] as num).toInt(),
+      reps: json['reps'] as String,
+      initialWeight: initialWeight,
+      currentSet: 1,
+      actualWeights: weightsList.cast<String>(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'sets': sets,
+      'reps': reps,
+      'initialWeight': initialWeight,
+      'actualWeights': actualWeights,
+    };
+  }
 }
 
-// ======================================================================
-// 2. Storage Management & Services 
-// ======================================================================
+class Routine {
+  final String id;
+  final String name;
+  final bool isCustom;
+  final List<Exercise> exercises;
 
-class WorkoutLoggerRepository {
-  static const String _logKey = 'all_workout_logs';
-  static const String _exerciseTemplatesKey = 'exercise_templates'; 
-  
-  final Map<String, List<ExerciseTemplate>> _defaultExercises = {
-    'Chest': [
-      ExerciseTemplate(name: 'Barbell Bench Press', muscleGroup: 'Chest'),
-      ExerciseTemplate(name: 'Dumbbell Flyes', muscleGroup: 'Chest'),
-      ExerciseTemplate(name: 'Cable Crossover', muscleGroup: 'Chest'),
-      ExerciseTemplate(name: 'Incline Dumbbell Press', muscleGroup: 'Chest'),
-    ],
-    'Back': [
-      ExerciseTemplate(name: 'Barbell Row', muscleGroup: 'Back'),
-      ExerciseTemplate(name: 'Lat Pulldown', muscleGroup: 'Back'),
-      ExerciseTemplate(name: 'Deadlift', muscleGroup: 'Back'),
-    ],
-    'Legs': [
-      ExerciseTemplate(name: 'Barbell Squat', muscleGroup: 'Legs'),
-      ExerciseTemplate(name: 'Leg Press', muscleGroup: 'Legs'),
-      ExerciseTemplate(name: 'Hamstring Curl', muscleGroup: 'Legs'),
-    ],
-    'Abs': [
-      ExerciseTemplate(name: 'Plank', muscleGroup: 'Abs'),
-      ExerciseTemplate(name: 'Crunches', muscleGroup: 'Abs'),
-    ],
-    'Shoulders': [
-      ExerciseTemplate(name: 'Overhead Press', muscleGroup: 'Shoulders'),
-      ExerciseTemplate(name: 'Lateral Raises', muscleGroup: 'Shoulders'),
-    ],
-    'Arms': [
-      ExerciseTemplate(name: 'Bicep Curls', muscleGroup: 'Arms'),
-      ExerciseTemplate(name: 'Tricep Extensions', muscleGroup: 'Arms'),
-    ],
-    'Other': [
-      ExerciseTemplate(name: 'Calf Raises', muscleGroup: 'Other'),
-    ]
-  };
+  Routine({
+    required this.id,
+    required this.name,
+    required this.isCustom,
+    required this.exercises,
+  });
 
-  Future<Map<String, List<ExerciseTemplate>>> getAllExerciseTemplates() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userExercisesJson = prefs.getString(_exerciseTemplatesKey);
-    
-    Map<String, List<ExerciseTemplate>> allExercises = {};
-
-    _defaultExercises.forEach((group, list) {
-      allExercises[group] = List.from(list); 
-    });
-
-    if (userExercisesJson != null && userExercisesJson.isNotEmpty) {
-      try {
-        final List<dynamic> userList = jsonDecode(userExercisesJson);
-        for (var json in userList) {
-          final template = ExerciseTemplate.fromJson(json as Map<String, dynamic>);
-          
-          final currentGroupList = allExercises.putIfAbsent(template.muscleGroup, () => []);
-          
-          if (!currentGroupList.any((e) => e.name == template.name)) {
-              currentGroupList.add(template);
-          }
-        }
-      } catch (e) {
-        debugPrint('Repository Error decoding user exercises: $e');
-      }
-    }
-    return allExercises;
+  factory Routine.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> exList = json['exercises'] ?? [];
+    return Routine(
+      id: json['id'] ?? const Uuid().v4(),
+      name: json['name'] ?? 'Custom Routine',
+      isCustom: json['isCustom'] ?? true,
+      exercises: exList.map((e) => Exercise.fromJson(e as Map<String, dynamic>)).toList(),
+    );
   }
-  
-  Future<void> saveNewExercise(ExerciseTemplate newExercise) async {
-    final prefs = await SharedPreferences.getInstance();
-    List<ExerciseTemplate> userAdditions = [];
 
-    final userExercisesJson = prefs.getString(_exerciseTemplatesKey);
-    if (userExercisesJson != null && userExercisesJson.isNotEmpty) {
-      try {
-        final List<dynamic> userList = jsonDecode(userExercisesJson);
-        userAdditions = userList.map((json) => ExerciseTemplate.fromJson(json)).toList();
-      } catch (e) {
-        debugPrint('Error loading existing user exercises for saving: $e');
-      }
-    }
-
-    if (!userAdditions.any((e) => e.name == newExercise.name)) {
-        userAdditions.add(newExercise);
-    } 
-
-    final jsonString = jsonEncode(userAdditions.map((e) => e.toJson()).toList());
-    await prefs.setString(_exerciseTemplatesKey, jsonString);
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'isCustom': isCustom,
+      'exercises': exercises.map((e) => e.toJson()).toList(),
+    };
   }
-  
-  Future<List<ExerciseLog>> getAllLogs() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_logKey);
-    if (jsonString == null || jsonString.isEmpty) return [];
+}
+
+class WorkoutLog {
+  final String routineId;
+  final String routineName;
+  final DateTime date;
+  final List<Exercise> completedExercises;
+
+  WorkoutLog({
+    required this.routineId,
+    required this.routineName,
+    required this.date,
+    required this.completedExercises,
+  });
+
+  factory WorkoutLog.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> exList = json['completedExercises'] ?? [];
+    return WorkoutLog(
+      routineId: json['routineId'] as String,
+      routineName: json['routineName'] as String,
+      date: DateTime.parse(json['date'] as String),
+      completedExercises: exList.map((e) => Exercise.fromJson(e as Map<String, dynamic>)).toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'routineId': routineId,
+      'routineName': routineName,
+      'date': date.toIso8601String(),
+      'completedExercises': completedExercises.map((e) => e.toJson()).toList(),
+    };
+  }
+}
+
+// Default Routines
+final List<Routine> defaultRoutines = [
+  Routine(
+    id: 'default-1',
+    name: "Full Body Blast",
+    isCustom: false,
+    exercises: [
+      Exercise(name: "Barbell Squats", sets: 3, reps: '10-12', initialWeight: '60kg'),
+      Exercise(name: "Bench Press", sets: 3, reps: '10', initialWeight: '40kg'),
+      Exercise(name: "Dumbbell Rows", sets: 3, reps: '10', initialWeight: '15kg'),
+      Exercise(name: "Overhead Press", sets: 3, reps: '10', initialWeight: '20kg'),
+    ],
+  ),
+  Routine(
+    id: 'default-2',
+    name: "Push Day (Chest, Shoulders, Triceps)",
+    isCustom: false,
+    exercises: [
+      Exercise(name: "Incline Dumbbell Press", sets: 4, reps: '8', initialWeight: '30kg'),
+      Exercise(name: "Lateral Raises", sets: 3, reps: '12', initialWeight: '5kg'),
+      Exercise(name: "Triceps Pushdown", sets: 3, reps: '10-12', initialWeight: '10kg'),
+    ],
+  ),
+];
+
+// -----------------------------------------------------------------------------
+// Styling Constants
+// -----------------------------------------------------------------------------
+
+abstract class AppColors {
+  static const Color primary = Color(0xFF1E88E5); // Deep Ocean Blue
+  static const Color accent = Color(0xFF00E5FF); // Electric Cyan
+  static const Color background = Colors.white;
+  static const Color card = Colors.white;
+  static const Color darkText = Color(0xFF263238);
+}
+
+const double kBorderRadius = 25.0;
+
+// -----------------------------------------------------------------------------
+// Local Storage Service (Mockup)
+// -----------------------------------------------------------------------------
+
+class LocalStorageService {
+  static const String _routinesKey = 'custom_routines_json';
+  static const String _logsKey = 'workout_logs_json';
+  static final Map<String, String> _storage = {};
+
+  Future<List<Routine>> loadCustomRoutines() async {
+    final String? routinesJsonString = _storage[_routinesKey];
+    if (routinesJsonString == null || routinesJsonString.isEmpty) return [];
+
     try {
-      final List<dynamic> jsonList = jsonDecode(jsonString);
-      return jsonList
-          .map((json) => ExerciseLog.fromJson(json as Map<String, dynamic>))
+      final List<dynamic> routinesList = jsonDecode(routinesJsonString) as List<dynamic>;
+      return routinesList
+          .map((json) => Routine.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      debugPrint('Repository Error decoding logs: $e');
+      print("Error decoding routines from local storage: $e");
       return [];
     }
   }
 
-  Future<void> saveAllLogs(List<ExerciseLog> logs) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = jsonEncode(logs.map((e) => e.toJson()).toList());
-    await prefs.setString(_logKey, jsonString);
+  Future<void> saveCustomRoutines(List<Routine> routines) async {
+    try {
+      final List<Map<String, dynamic>> routinesJsonList =
+          routines.map((r) => r.toJson()).toList();
+      final String routinesJsonString = jsonEncode(routinesJsonList);
+      _storage[_routinesKey] = routinesJsonString;
+    } catch (e) {
+      print("Error saving routines to local storage: $e");
+    }
   }
-}
+  
+  Future<void> saveWorkoutLog(WorkoutLog log) async {
+    try {
+      List<WorkoutLog> logs = await loadWorkoutLogs();
+      logs.removeWhere((l) => l.routineId == log.routineId);
+      logs.add(log);
 
-class WorkoutTemplateService {
-  final WorkoutLoggerRepository _repository = WorkoutLoggerRepository();
+      final List<Map<String, dynamic>> logsJsonList =
+          logs.map((l) => l.toJson()).toList();
+      final String logsJsonString = jsonEncode(logsJsonList);
+      _storage[_logsKey] = logsJsonString;
+    } catch (e) {
+      print("Error saving workout log: $e");
+    }
+  }
 
-  Future<List<WorkoutTemplate>> getPredefinedWorkouts() async {
-    final exercises = await _repository.getAllExerciseTemplates();
-    
-    List<ExerciseTemplate> getExercises(String group, int count) {
-      final groupExercises = exercises.values.expand((list) => list)
-          .where((e) => e.muscleGroup == group)
+  Future<List<WorkoutLog>> loadWorkoutLogs() async {
+    final String? logsJsonString = _storage[_logsKey];
+    if (logsJsonString == null || logsJsonString.isEmpty) return [];
+
+    try {
+      final List<dynamic> logsList = jsonDecode(logsJsonString) as List<dynamic>;
+      return logsList
+          .map((json) => WorkoutLog.fromJson(json as Map<String, dynamic>))
           .toList();
-      return groupExercises.take(count).toList();
+    } catch (e) {
+      print("Error decoding workout logs from local storage: $e");
+      return [];
     }
-    
-    final allAvailableExercises = exercises.values.expand((list) => list).toList();
-
-    final customRoutine = allAvailableExercises.length > 4 ? allAvailableExercises.sublist(0, 4) : allAvailableExercises;
-    
-    return [
-      WorkoutTemplate(
-        name: 'Fullbody Workout',
-        exercises: [
-          ...getExercises('Chest', 1), 
-          ...getExercises('Back', 1),  
-          ...getExercises('Legs', 1),   
-          ...getExercises('Abs', 1),   
-        ],
-        iconAsset: 'assets/person_jumping.png', 
-        durationMinutes: 32,
-      ),
-      WorkoutTemplate(
-        name: 'Lowerbody Workout',
-        exercises: getExercises('Legs', 3), 
-        iconAsset: 'assets/woman_dumbbell.png', 
-        durationMinutes: 40,
-      ),
-      WorkoutTemplate(
-        name: 'AB Workout',
-        exercises: [
-          ...getExercises('Abs', 2), 
-          ExerciseTemplate(name: 'Leg Raises', muscleGroup: 'Abs'), 
-        ],
-        iconAsset: 'assets/man_laying.png', 
-        durationMinutes: 20,
-      ),
-      WorkoutTemplate(
-        name: 'Upperbody Workout',
-        exercises: [
-          ...getExercises('Chest', 2),
-          ...getExercises('Back', 2),
-          ...getExercises('Shoulders', 1),
-          ...getExercises('Arms', 1),
-        ],
-        iconAsset: 'assets/man_lifting.png', 
-        durationMinutes: 45,
-      ),
-      if (customRoutine.isNotEmpty)
-        WorkoutTemplate(
-            name: 'روتين مخصص (تجريبي)',
-            exercises: customRoutine,
-            iconAsset: 'assets/custom_icon.png',
-            durationMinutes: 30,
-        ),
-    ];
   }
 }
 
-class WorkoutAnalysisService {
-  final WorkoutLoggerRepository _repository = WorkoutLoggerRepository();
-  
-  double _calculateE1RM(double weight, int reps) {
-    if (reps == 0 || reps > 12) return 0.0;
-    return double.parse((weight / (1.0278 - (0.0278 * reps))).toStringAsFixed(2));
-  }
-  
-  double _calculateVolume(double weight, int reps) {
-    return weight * reps;
-  }
-  
-  Future<ExerciseLog?> getCurrentDayLog(String exerciseName) async {
-    final logs = await _repository.getAllLogs();
-    final today = DateTime.now().toIso8601String().substring(0, 10);
-    final logId = '$exerciseName-$today';
-    final logIndex = logs.indexWhere((log) => log.id == logId);
-    return logIndex != -1 ? logs[logIndex] : null;
-  }
+// -----------------------------------------------------------------------------
+// App Initialization
+// -----------------------------------------------------------------------------
 
-  Future<void> logNewSet({
-    required String exerciseName,
-    required double weight,
-    required int reps,
-    required int rpe,
-  }) async {
-    final logs = await _repository.getAllLogs();
-    final today = DateTime.now().toIso8601String().substring(0, 10);
-    final logId = '$exerciseName-$today';
-
-    final e1RMValue = _calculateE1RM(weight, reps);
-    final volumeValue = _calculateVolume(weight, reps);
-
-    final existingLogIndex = logs.indexWhere((log) => log.id == logId);
-
-    final newSet = SetEntry(
-      setNumber: existingLogIndex != -1 ? logs[existingLogIndex].sets.length + 1 : 1,
-      weight: weight,
-      reps: reps,
-      e1RM: e1RMValue,
-      rpe: rpe,
-      volume: volumeValue,
-    );
-
-    if (existingLogIndex != -1) {
-      final log = logs[existingLogIndex];
-      log.sets.add(newSet);
-      log.totalVolume += volumeValue; 
-      if (weight > log.personalRecordWeight) {
-        log.personalRecordWeight = weight;
-      }
-    } else {
-      final newLog = ExerciseLog(
-        id: logId,
-        exerciseName: exerciseName,
-        date: today,
-        sets: [newSet],
-        personalRecordWeight: weight,
-        totalVolume: volumeValue,
-      );
-      logs.add(newLog);
-    }
-    await _repository.saveAllLogs(logs);
-  }
-
-  Future<void> deleteSet({
-    required String logId,
-    required int setNumber,
-  }) async {
-    final logs = await _repository.getAllLogs();
-    final logIndex = logs.indexWhere((log) => log.id == logId);
-
-    if (logIndex != -1) {
-      final log = logs[logIndex];
-      final setToDeleteIndex = log.sets.indexWhere((set) => set.setNumber == setNumber);
-
-      if (setToDeleteIndex != -1) {
-        final setToDelete = log.sets[setToDeleteIndex];
-        final deletedWeight = setToDelete.weight;
-        
-        log.sets.removeAt(setToDeleteIndex);
-        log.totalVolume -= setToDelete.volume;
-
-        if (deletedWeight >= log.personalRecordWeight) {
-            log.personalRecordWeight = log.sets.isEmpty 
-                ? 0.0 
-                : log.sets.map((s) => s.weight).reduce((a, b) => a > b ? a : b);
-        }
-
-        for (int i = 0; i < log.sets.length; i++) {
-          log.sets[i] = SetEntry(
-            setNumber: i + 1,
-            weight: log.sets[i].weight,
-            reps: log.sets[i].reps,
-            e1RM: log.sets[i].e1RM,
-            rpe: log.sets[i].rpe,
-            volume: log.sets[i].volume,
-          );
-        }
-
-        if (log.sets.isEmpty) {
-          logs.removeAt(logIndex);
-        }
-        
-        await _repository.saveAllLogs(logs);
-      }
-    }
-  }
-
-  Future<SetEntry?> getLastRecordedSet(String exerciseName) async {
-    final logs = await _repository.getAllLogs();
-    final specificLogs = logs
-        .where((log) => log.exerciseName == exerciseName)
-        .toList();
-
-    if (specificLogs.isEmpty) return null;
-
-    specificLogs.sort((a, b) => b.date.compareTo(a.date));
-
-    return specificLogs.first.sets.last;
-  }
+void main() {
+  runApp(const WorkoutApp());
 }
 
-// ======================================================================
-// 3. New Page: Statistics and Progress 
-// ======================================================================
-
-class StatsPage extends StatelessWidget {
-  const StatsPage({super.key});
+class WorkoutApp extends StatelessWidget {
+  const WorkoutApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('الإحصائيات والتقدم', style: TextStyle(color: textDark)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: textDark),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  gradient: getPrimaryGradient(),
-                ),
-                child: const Text(
-                  'سيتم هنا عرض الرسوم البيانية لتطور الأداء (الحجم الكلي والأرقام القياسية).',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18, color: Colors.white),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'قريباً: تتبع الحجم الأسبوعي وأفضل أداء (PRs) 📊',
-                style: TextStyle(fontSize: 16, color: textMuted),
-              ),
-            ],
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Workout Tracker Pro',
+      theme: ThemeData(
+        primaryColor: AppColors.primary,
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: AppColors.background,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppColors.background,
+          foregroundColor: AppColors.darkText,
+          elevation: 0,
+          titleTextStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.darkText),
+        ),
+        colorScheme: const ColorScheme.light(
+          primary: AppColors.primary,
+          secondary: AppColors.accent,
+        ),
+        cardTheme: CardThemeData(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kBorderRadius)),
+          elevation: 8, // Stronger shadow
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kBorderRadius * 0.6)),
+            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            elevation: 5,
           ),
         ),
-      ),
-    );
-  }
-}
-
-
-// ======================================================================
-// 4. UI: Custom Routine Creation BottomSheet (النسخة النهائية)
-// ======================================================================
-
-class CreateRoutineBottomSheet extends StatefulWidget {
-  final List<ExerciseTemplate> availableExercises;
-  final VoidCallback onRoutineCreated;
-
-  const CreateRoutineBottomSheet({
-    super.key, 
-    required this.availableExercises,
-    required this.onRoutineCreated,
-  });
-
-  @override
-  State<CreateRoutineBottomSheet> createState() => _CreateRoutineBottomSheetState();
-}
-
-class _CreateRoutineBottomSheetState extends State<CreateRoutineBottomSheet> {
-  final TextEditingController _routineNameController = TextEditingController();
-  final List<ExerciseTemplate> _selectedExercises = [];
-  
-  @override
-  void dispose() {
-    _routineNameController.dispose();
-    super.dispose();
-  }
-
-  void _addExercise(ExerciseTemplate exercise) {
-    setState(() {
-      if (!_selectedExercises.contains(exercise)) {
-        _selectedExercises.add(exercise);
-      }
-    });
-  }
-
-  void _removeExercise(ExerciseTemplate exercise) {
-    setState(() {
-      _selectedExercises.remove(exercise);
-    });
-  }
-
-  void _saveRoutine() {
-    if (_routineNameController.text.trim().isEmpty || _selectedExercises.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء إدخال اسم الروتين واختيار تمرين واحد على الأقل.')),
-      );
-      return;
-    }
-
-    // هنا يجب إضافة منطق حفظ الروتين الفعلي إلى الشيرد بريفرينسز 
-
-    Navigator.of(context).pop();
-    widget.onRoutineCreated();
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تم حفظ الروتين "${_routineNameController.text.trim()}" بنجاح!'))
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24.0),
-      // لضمان التعامل مع لوحة المفاتيح
-      margin: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          // مهم جداً
-          mainAxisSize: MainAxisSize.min, 
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('إنشاء روتين مخصص', style: TextStyle(color: textDark, fontWeight: FontWeight.bold, fontSize: 20)),
-            const SizedBox(height: 20),
-            
-            TextField(
-              controller: _routineNameController,
-              decoration: InputDecoration(
-                labelText: 'اسم الروتين (مثل: صدر وباي)',
-                labelStyle: TextStyle(color: textMuted),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: primaryGradientEnd)),
-                border: const OutlineInputBorder(),
-              ),
-              style: const TextStyle(color: textDark),
-            ),
-            const SizedBox(height: 20),
-            
-            const Text('التمارين المختارة:', style: TextStyle(color: textDark, fontWeight: FontWeight.w600)),
-            Wrap(
-              spacing: 8.0,
-              children: _selectedExercises.map((exercise) {
-                return Chip(
-                  backgroundColor: primaryGradientEnd.withOpacity(0.15),
-                  label: Text(exercise.name, style: TextStyle(color: primaryGradientEnd, fontWeight: FontWeight.w500)),
-                  deleteIcon: Icon(Icons.close, size: 18, color: primaryGradientEnd),
-                  onDeleted: () => _removeExercise(exercise),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
-                );
-              }).toList(),
-            ),
-            
-            const SizedBox(height: 15),
-            const Text('إضافة تمارين متوفرة:', style: TextStyle(color: textDark, fontWeight: FontWeight.w600)),
-            
-            // استخدام ListBody لتجنب أي مشاكل تخطيط قد تنشأ من ListView داخل SingleChildScrollView
-            ListBody(
-              children: widget.availableExercises.map((exercise) {
-                final isSelected = _selectedExercises.contains(exercise);
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                  title: Text(exercise.name, style: TextStyle(color: textDark)),
-                  subtitle: Text(exercise.muscleGroup, style: TextStyle(color: textMuted, fontSize: 12)),
-                  trailing: isSelected
-                      ? Icon(Icons.check_circle, color: primaryGradientStart)
-                      : Icon(Icons.add_circle_outline, color: textMuted.withOpacity(0.5)),
-                  onTap: () {
-                    if (isSelected) {
-                      _removeExercise(exercise);
-                    } else {
-                      _addExercise(exercise);
-                    }
-                  },
-                );
-              }).toList(),
-            ),
-            
-            const SizedBox(height: 25),
-            
-            // زر الحفظ
-            SizedBox(
-              width: double.infinity,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  gradient: getPrimaryGradient(),
-                ),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const Text('حفظ الروتين', style: TextStyle(color: Colors.white, fontSize: 16)),
-                  onPressed: _saveRoutine,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10), 
-          ],
+        inputDecorationTheme: InputDecorationTheme(
+           border: OutlineInputBorder(
+             borderRadius: BorderRadius.circular(kBorderRadius * 0.4),
+             borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+           ),
+           focusedBorder: OutlineInputBorder(
+             borderRadius: BorderRadius.circular(kBorderRadius * 0.4),
+             borderSide: const BorderSide(color: AppColors.primary, width: 2),
+           ),
+           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
+      home: const WorkoutLogPage(),
     );
   }
 }
 
+// -----------------------------------------------------------------------------
+// Main Screen (WorkoutLogPage) - Home Screen
+// -----------------------------------------------------------------------------
 
-// ======================================================================
-// 5. UI: Main Workout Selection Page (MyTrainsPage)
-// ======================================================================
-
-class MyTrainsPage extends StatefulWidget {
-  const MyTrainsPage({super.key});
+class WorkoutLogPage extends StatefulWidget {
+  const WorkoutLogPage({super.key});
 
   @override
-  State<MyTrainsPage> createState() => _MyTrainsPageState();
+  State<WorkoutLogPage> createState() => _WorkoutLogPageState();
 }
 
-class _MyTrainsPageState extends State<MyTrainsPage> {
-  final WorkoutTemplateService _workoutService = WorkoutTemplateService();
-  final WorkoutLoggerRepository _repository = WorkoutLoggerRepository(); 
-  List<WorkoutTemplate> _availableWorkouts = [];
-  final List<String> _muscleGroups = ['Chest', 'Back', 'Legs', 'Arms', 'Shoulders', 'Abs', 'Other'];
+class _WorkoutLogPageState extends State<WorkoutLogPage> {
+  final LocalStorageService _localStorage = LocalStorageService();
+  List<Routine> _customRoutines = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadWorkouts();
+    _loadRoutines();
   }
 
-  Future<void> _loadWorkouts() async {
-    final workouts = await _workoutService.getPredefinedWorkouts();
-    setState(() {
-      _availableWorkouts = workouts;
-    });
+  Future<void> _loadRoutines() async {
+    try {
+      final loadedRoutines = await _localStorage.loadCustomRoutines();
+      setState(() {
+        _customRoutines = loadedRoutines;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print("Failed to load routines: $e");
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
-  
-  // دالة جديدة تستخدم BottomSheet لإضافة تمرين جديد (تجنباً لأخطاء Layout)
-  void _showAddExerciseDialog() {
-    final nameController = TextEditingController();
-    String? selectedGroup = _muscleGroups.first;
 
-    showModalBottomSheet(
+  Future<void> _deleteRoutine(String routineId, BuildContext context) async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      isScrollControlled: true, 
-      backgroundColor: Colors.transparent, 
-      builder: (BuildContext context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Deletion'),
+        content: const Text('Are you sure you want to delete this routine? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
           ),
-          child: Container(
-            padding: const EdgeInsets.all(24.0),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min, 
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const Text(
-                  'إضافة تمرين جديد',
-                  style: TextStyle(
-                    color: textDark,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                      labelText: 'اسم التمرين',
-                      labelStyle: TextStyle(color: textMuted),
-                      focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: primaryGradientEnd)),
-                      border: const OutlineInputBorder(),
-                  ),
-                  style: const TextStyle(color: textDark), 
-                ),
-                const SizedBox(height: 15),
-                
-                StatefulBuilder(
-                  builder: (BuildContext context, StateSetter setStateInner) {
-                    return DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
-                        labelText: 'المجموعة العضلية',
-                        labelStyle: TextStyle(color: textMuted),
-                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: primaryGradientEnd, width: 2)),
-                      ),
-                      value: selectedGroup,
-                      items: _muscleGroups.map((group) {
-                        return DropdownMenuItem(value: group, child: Text(group, style: const TextStyle(color: textDark)));
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        setStateInner(() {
-                          selectedGroup = newValue;
-                        });
-                      },
-                    );
-                  }
-                ),
-                const SizedBox(height: 25),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      gradient: getPrimaryGradient(),
-                    ),
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent, 
-                        shadowColor: Colors.transparent,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text('إضافة التمرين', style: TextStyle(color: Colors.white, fontSize: 16)),
-                      onPressed: () async {
-                        if (nameController.text.isNotEmpty && selectedGroup != null) {
-                          final newExercise = ExerciseTemplate(
-                            name: nameController.text.trim(),
-                            muscleGroup: selectedGroup!,
-                          );
-                          await _repository.saveNewExercise(newExercise);
-                          await _loadWorkouts(); 
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('تمت إضافة التمرين بنجاح!')),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
-        );
-      },
+        ],
+      ),
     );
-  }
-  
-  // دالة جديدة تستخدم BottomSheet لإنشاء روتين مخصص (تجنباً لأخطاء Layout)
-  void _showCreateRoutineDialog() async {
-    final Map<String, List<ExerciseTemplate>> allTemplates = await _repository.getAllExerciseTemplates();
-    final List<ExerciseTemplate> allExercises = allTemplates.values.expand((list) => list).toList();
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return CreateRoutineBottomSheet( // استخدام الكلاس الجديد
-          availableExercises: allExercises,
-          onRoutineCreated: _loadWorkouts,
-        );
-      },
+    if (confirmed == true) {
+      _customRoutines.removeWhere((r) => r.id == routineId);
+      await _localStorage.saveCustomRoutines(_customRoutines);
+      setState(() {});
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Routine deleted successfully.'), backgroundColor: Colors.lightBlue),
+      );
+    }
+  }
+
+  void _addRoutine(Routine newRoutine) async {
+    _customRoutines.add(newRoutine);
+    await _localStorage.saveCustomRoutines(_customRoutines);
+    setState(() {});
+  }
+
+  void _startWorkout(BuildContext context, Routine routine) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => WorkoutScreen(routine: routine),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, 
       appBar: AppBar(
-        title: const Text('الروتينات والتخطيط', style: TextStyle(color: textDark)),
-        backgroundColor: Colors.white, 
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bar_chart, color: textDark), 
-            onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const StatsPage()),
-                );
-            },
-            tooltip: 'الإحصائيات',
-          ),
-          IconButton(
-            icon: const Icon(Icons.add_box_outlined, color: textDark),
-            onPressed: _showAddExerciseDialog,
-            tooltip: 'إضافة تمرين جديد',
-          )
-        ],
+        title: const Text('Workout Routines'),
+        centerTitle: false,
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 20, 16, 10),
-            child: Text(
-              'ماذا تريد أن تتمرن اليوم؟',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textDark),
-            ),
-          ),
-          // Create Custom Routine Button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: OutlinedButton.icon(
-              onPressed: _showCreateRoutineDialog,
-              icon: Icon(Icons.create_new_folder, color: primaryGradientEnd),
-              label: Text('إنشاء روتين مخصص', style: TextStyle(color: primaryGradientEnd, fontWeight: FontWeight.bold)),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: primaryGradientEnd.withOpacity(0.5)),
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      // Use LTR directionality for English text by default
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Create Custom Routine Button - Stunning Accent Design
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(kBorderRadius),
+                gradient: const LinearGradient(
+                  colors: [AppColors.accent, AppColors.primary],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.accent.withOpacity(0.5),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => CreateRoutineScreen(
+                          onRoutineCreated: _addRoutine,
+                        ),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(kBorderRadius),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_circle_outline, color: Colors.white, size: 30),
+                        SizedBox(width: 15),
+                        Text(
+                          'Create Workout ',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: _availableWorkouts.length,
-              itemBuilder: (context, index) {
-                return _buildWorkoutCard(_availableWorkouts[index], context);
-              },
+
+            const SizedBox(height: 30),
+            const Text(
+              'Available Routines',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.darkText),
             ),
-          ),
-        ],
+            const Divider(height: 20, thickness: 1.5, color: AppColors.primary),
+
+            // Routines List
+            if (_isLoading)
+              const Center(child: Padding(
+                padding: EdgeInsets.all(30.0),
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ))
+            else
+             // ...defaultRoutines.map((routine) => _buildRoutineCard(context, routine)),
+              ..._customRoutines.map((routine) => _buildRoutineCard(context, routine)).toList(),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildWorkoutCard(WorkoutTemplate workout, BuildContext context) {
-    final String durationText = '${workout.durationMinutes} دقيقة';
-    final String exerciseCount = '${workout.exercises.length} تمارين';
-    
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TrackingPage(
-              selectedExercises: workout.exercises,
-              routineName: workout.name,
-            ),
-          ),
-        );
-      },
+  // Routine Card Design - Clean and Modern
+  Widget _buildRoutineCard(BuildContext context, Routine routine) {
+    final Color indicatorColor = routine.isCustom ? AppColors.accent : AppColors.primary;
+
+    return Card(
+      color: AppColors.card,
+      elevation: 8,
+      margin: const EdgeInsets.only(bottom: 20),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(kBorderRadius),
+      ),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
         decoration: BoxDecoration(
-          color: cardBackground,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: textMuted.withOpacity(0.05),
-              spreadRadius: 2,
-              blurRadius: 10,
-              offset: const Offset(0, 5), 
-            ),
-          ],
-          border: Border.all(color: textMuted.withOpacity(0.1), width: 1),
+          borderRadius: BorderRadius.circular(kBorderRadius),
+          border: Border.all(color: indicatorColor.withOpacity(0.2), width: 1.5),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(20.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -928,37 +475,935 @@ class _MyTrainsPageState extends State<MyTrainsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      workout.name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: textDark, 
-                      ),
+                      routine.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: AppColors.darkText),
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      '$exerciseCount | $durationText',
+                      '${routine.exercises.length} Exercises • ${routine.isCustom ? 'Custom' : 'Default'}',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 15),
+              // Start Button
+              ElevatedButton.icon(
+                onPressed: () => _startWorkout(context, routine),
+                icon: const Icon(Icons.play_arrow_rounded, size: 24),
+                label: const Text('Start'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: indicatorColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  elevation: 5,
+                ),
+              ),
+              // Delete Button for Custom Routines
+              if (routine.isCustom)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red, size: 28),
+                  onPressed: () => _deleteRoutine(routine.id, context),
+                  tooltip: 'Delete Routine',
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Create Routine Screen
+// -----------------------------------------------------------------------------
+
+class CreateRoutineScreen extends StatefulWidget {
+  final Function(Routine) onRoutineCreated;
+  const CreateRoutineScreen({super.key, required this.onRoutineCreated});
+
+  @override
+  State<CreateRoutineScreen> createState() => _CreateRoutineScreenState();
+}
+
+class _CreateRoutineScreenState extends State<CreateRoutineScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _routineNameController = TextEditingController();
+  final List<ExerciseInput> _exerciseInputs = [];
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _addExerciseInput();
+  }
+
+  void _addExerciseInput() {
+    setState(() {
+      _exerciseInputs.add(ExerciseInput(key: UniqueKey()));
+    });
+  }
+
+  void _removeExerciseInput(Key key) {
+    setState(() {
+      _exerciseInputs.removeWhere((input) => input.key == key);
+      if (_exerciseInputs.isEmpty) {
+        _addExerciseInput();
+      }
+    });
+  }
+
+  void _saveRoutine() {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isSaving = true);
+
+      try {
+        List<Exercise> exercises = [];
+        for (var input in _exerciseInputs) {
+          final data = input.getData();
+          if (data != null) {
+            exercises.add(data);
+          }
+        }
+
+        if (exercises.isEmpty) {
+          throw 'Please add at least one exercise.';
+        }
+
+        final newRoutine = Routine(
+          id: const Uuid().v4(),
+          name: _routineNameController.text.trim(),
+          isCustom: true,
+          exercises: exercises,
+        );
+
+        widget.onRoutineCreated(newRoutine);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Custom routine saved successfully!'), backgroundColor: Colors.lightBlue),
+        );
+        Navigator.of(context).pop();
+
+      } catch (e) {
+        print("Save Error: $e");
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save routine: ${e.toString()}'), backgroundColor: Colors.red),
+        );
+      } finally {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Create New Routine'),
+        centerTitle: true,
+      ),
+      body: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Routine Name:',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color:Colors.white),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                        style: const TextStyle(color: Colors.white), // 👈 هنا اللون الأسود
+
+                      controller: _routineNameController,
+                      decoration: const InputDecoration(
+                        hintText: 'e.g. Chest & Arm Workout',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a routine name';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 30),
+                    const Text(
+                      'Exercises:',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.darkText),
+                    ),
+                    const Divider(height: 20, thickness: 1),
+
+                    ..._exerciseInputs.asMap().entries.map((entry) {
+                      final input = entry.value;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 20),
+                        child: ExerciseInputCard(
+                          key: input.key,
+                          exerciseInput: input,
+                          onRemove: _exerciseInputs.length > 1 ? () => _removeExerciseInput(input.key!) : null,
+                        ),
+                      );
+                    }).toList(),
+
+                    OutlinedButton.icon(
+                      onPressed: _addExerciseInput,
+                      icon: const Icon(Icons.add_box_rounded),
+                      label: const Text('Add New Exercise'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary, width: 2),
+                        minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kBorderRadius * 0.4)),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            ),
+
+            // Save Button
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _saveRoutine,
+                child: _isSaving
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Save Routine', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Exercise Input Components
+// -----------------------------------------------------------------------------
+
+class ExerciseInput {
+  final Key key;
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController setsController = TextEditingController();
+  final TextEditingController repsController = TextEditingController();
+  final TextEditingController weightController = TextEditingController();
+
+  ExerciseInput({required this.key}) {
+    weightController.text = '';
+  }
+
+  Exercise? getData() {
+    final name = nameController.text.trim();
+    final setsText = setsController.text.trim();
+    final reps = repsController.text.trim();
+    final weight = weightController.text.trim();
+
+    if (name.isNotEmpty && setsText.isNotEmpty && reps.isNotEmpty && weight.isNotEmpty) {
+      final sets = int.tryParse(setsText);
+      if (sets != null && sets > 0) {
+        return Exercise(
+          name: name,
+          sets: sets,
+          reps: reps,
+          initialWeight: weight,
+        );
+      }
+    }
+    return null;
+  }
+}
+
+class ExerciseInputCard extends StatelessWidget {
+  final ExerciseInput exerciseInput;
+  final VoidCallback? onRemove;
+
+  const ExerciseInputCard({
+    required super.key,
+    required this.exerciseInput,
+    this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(kBorderRadius * 0.7),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: Colors.grey.shade200,
+        //     blurRadius: 10,
+        //     offset: const Offset(0, 4),
+        //   ),
+        // ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Exercise Details',
+                style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18),
+              ),
+              if (onRemove != null)
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.red, size: 24),
+                  onPressed: onRemove,
+                  tooltip: 'Remove Exercise',
+                ),
+            ],
+          ),
+          const Divider(height: 10, thickness: 1),
+          TextFormField(
+            controller: exerciseInput.nameController,
+              style: const TextStyle(color: Colors.black), // 👈 هنا اللون الأسود
+
+            decoration: const InputDecoration(
+              hintText: 'e.g. Pull-ups',
+              labelText: 'Name',
+              isDense: true,
+              
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Required';
+              return null;
+            },
+          ),
+          const SizedBox(height: 15),
+          Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: TextFormField(
+                    style: const TextStyle(color: Colors.black), // 👈 هنا اللون الأسود
+
+                  controller: exerciseInput.setsController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    hintText: 'Sets',
+                    labelText: 'Sets',
+                    isDense: true,
+                    
+                    
+                    
+                  ),
+                  validator: (value) {
+                    if (value == null || int.tryParse(value) == null) return 'Must be a number';
+                    if (int.parse(value) <= 0) return '> 0';
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 1,
+                child: TextFormField(
+                    style: const TextStyle(color: Colors.black), // 👈 هنا اللون الأسود
+
+                  controller: exerciseInput.repsController,
+                  decoration: const InputDecoration(
+                    hintText: 'e.g. 10 or 60s',
+                    labelText: 'Reps/Duration',
+                    isDense: true,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Required';
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 1,
+                child: TextFormField(
+                    style: const TextStyle(color: Colors.black), // 👈 هنا اللون الأسود
+
+                  controller: exerciseInput.weightController,
+                  decoration: const InputDecoration(
+                    hintText: 'e.g. 20kg',
+                    labelText: 'Weight',
+                    isDense: true,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Required';
+                    return null;
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Workout Execution Screen (Improved: Added Rest Timer)
+// -----------------------------------------------------------------------------
+
+class WorkoutScreen extends StatefulWidget {
+  final Routine routine;
+  const WorkoutScreen({super.key, required this.routine});
+
+  @override
+  State<WorkoutScreen> createState() => _WorkoutScreenState();
+}
+
+class _WorkoutScreenState extends State<WorkoutScreen> {
+  final LocalStorageService _localStorage = LocalStorageService();
+  late List<Exercise> _exercises;
+  int _currentExerciseIndex = 0;
+  final TextEditingController _currentWeightController = TextEditingController();
+  WorkoutLog? _lastLog;
+  bool _isLoadingLog = true;
+
+  // Rest Timer State
+  Timer? _restTimer;
+  static const int _restDuration = 60; // 60 seconds rest
+  int _restSeconds = _restDuration;
+  bool _isResting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeExercises();
+    _loadLastLog();
+  }
+  
+  void _initializeExercises() {
+      // Deep copy and initial setup
+    _exercises = widget.routine.exercises.map((e) => Exercise(
+      name: e.name,
+      sets: e.sets,
+      reps: e.reps,
+      initialWeight: e.initialWeight,
+      currentSet: 1,
+      actualWeights: List.filled(e.sets, e.initialWeight),
+    )).toList();
+  }
+
+  @override
+  void dispose() {
+    _restTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadLastLog() async {
+    final logs = await _localStorage.loadWorkoutLogs();
+    final lastLog = logs.firstWhereOrNull((log) => log.routineId == widget.routine.id);
+
+    setState(() {
+      _lastLog = lastLog;
+      _isLoadingLog = false;
+    });
+    _updateCurrentWeightController();
+  }
+
+  void _updateCurrentWeightController() {
+    if (_currentExerciseIndex < _exercises.length) {
+      final currentEx = _exercises[_currentExerciseIndex];
+      final previousExLog = _lastLog?.completedExercises.firstWhereOrNull(
+          (logEx) => logEx.name == currentEx.name
+      );
+
+      // Use last actual weight if available, otherwise use routine's initial weight
+      if (previousExLog != null && previousExLog.actualWeights.isNotEmpty) {
+          _currentWeightController.text = previousExLog.actualWeights.last;
+      } else {
+        _currentWeightController.text = currentEx.initialWeight;
+      }
+    } else {
+      _currentWeightController.text = '';
+    }
+  }
+
+  Exercise? _getPreviousExerciseLog(String exerciseName) {
+    return _lastLog?.completedExercises.firstWhereOrNull(
+      (logEx) => logEx.name == exerciseName,
+    );
+  }
+
+  void _startRestTimer() {
+    _restTimer?.cancel(); // Cancel any existing timer
+    _restSeconds = _restDuration; // Reset timer value
+
+    setState(() {
+      _isResting = true;
+    });
+
+    _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_restSeconds > 0) {
+        setState(() {
+          _restSeconds--;
+        });
+      } else {
+        _stopRestTimer();
+      }
+    });
+  }
+  
+  void _stopRestTimer() {
+    _restTimer?.cancel();
+    setState(() {
+      _isResting = false;
+      // When timer stops, update the weight field for the *next* set/exercise
+      _updateCurrentWeightController();
+    });
+  }
+
+
+  void _nextSet() {
+    if (_isResting) {
+      // Allow user to skip rest
+      _stopRestTimer();
+      return;
+    }
+
+    setState(() {
+      if (_currentExerciseIndex < _exercises.length) {
+        final currentEx = _exercises[_currentExerciseIndex];
+        final currentSetIndex = currentEx.currentSet - 1;
+
+        // 1. Save the actual weight used
+        final actualWeight = _currentWeightController.text.trim();
+        if (actualWeight.isNotEmpty && currentSetIndex < currentEx.actualWeights.length) {
+           currentEx.actualWeights[currentSetIndex] = actualWeight;
+        }
+
+        currentEx.currentSet++;
+
+        if (currentEx.currentSet > currentEx.sets) {
+          // Move to the next exercise
+          _currentExerciseIndex++;
+          // Skip rest if workout is completed or if it's the last set of the last exercise
+          if (_currentExerciseIndex < _exercises.length) {
+              _startRestTimer(); // Start rest timer before the next exercise
+          }
+        } else {
+            _startRestTimer(); // Start rest timer between sets
+        }
+      }
+    });
+  }
+
+  Future<void> _finishWorkout() async {
+    _stopRestTimer(); // Ensure timer is stopped if user finishes early
+
+    final workoutLog = WorkoutLog(
+      routineId: widget.routine.id,
+      routineName: widget.routine.name,
+      date: DateTime.now(),
+      completedExercises: _exercises,
+    );
+    await _localStorage.saveWorkoutLog(workoutLog);
+
+    if (!mounted) return;
+     ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Workout logged successfully!'), backgroundColor:  Colors.lightBlue),
+    );
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final int totalExercises = _exercises.length;
+    final bool workoutCompleted = _currentExerciseIndex >= totalExercises;
+    final Exercise? currentEx = workoutCompleted ? null : _exercises[_currentExerciseIndex];
+
+    final double totalSets = _exercises.fold(0.0, (sum, ex) => sum + ex.sets);
+    final double completedSets = _exercises.take(_currentExerciseIndex).fold(0.0, (sum, ex) => sum + ex.sets) +
+                                (currentEx?.currentSet ?? 1) - 1;
+    final double progress = totalSets > 0 ? completedSets / totalSets : 0.0;
+    final String nextButtonText = workoutCompleted
+        ? 'Finish Workout & Save Log'
+        : _isResting
+            ? 'Skip Rest / Set ${currentEx!.currentSet} Ready!'
+            : 'Next Set / Done';
+
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.routine.name),
+        centerTitle: true,
+      ),
+      body: Column(
+          children: [
+            // Overall Progress Bar
+            _buildProgressBar(progress),
+            
+            Expanded(
+              child: workoutCompleted
+                  ? _buildCompletionState(context)
+                  : (_isResting
+                      ? _buildRestTimer()
+                      : _buildWorkoutState(currentEx!, totalExercises)),
+            ),
+
+            // Next Set / Finish Button
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: ElevatedButton(
+                onPressed: workoutCompleted ? _finishWorkout : _nextSet,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: workoutCompleted || _isResting
+                      ? AppColors.accent
+                      : AppColors.primary,
+                  textStyle: const TextStyle(
+                    color: Colors.black, // 👈 لون النص
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  minimumSize: const Size.fromHeight(70),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(kBorderRadius * 0.6),
+                  ),
+                  elevation: 8,
+                ),
+                child: Text(
+                  nextButtonText,
+                  style: const TextStyle(
+                    color: Colors.white, // 👈 تأكيد اللون هنا برضه
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            )
+
+          ],
+        ),
+    );
+  }
+  
+  Widget _buildProgressBar(double progress) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      color: AppColors.primary.withOpacity(0.05),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Overall Progress', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkText)),
+              Text('${(progress * 100).toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Colors.grey.shade300,
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+            minHeight: 10,
+            borderRadius: BorderRadius.circular(5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRestTimer() {
+    final minutes = (_restSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_restSeconds % 60).toString().padLeft(2, '0');
+
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(30),
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: AppColors.accent.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(kBorderRadius),
+          border: Border.all(color: AppColors.accent, width: 2),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'REST TIME',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                color: AppColors.darkText,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 150,
+                  height: 150,
+                  child: CircularProgressIndicator(
+                    value: _restSeconds / _restDuration,
+                    strokeWidth: 10,
+                    backgroundColor: AppColors.accent.withOpacity(0.3),
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+                  ),
+                ),
+                Text(
+                  '$minutes:$seconds',
+                  style: const TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkText,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Recovery is Key!',
+              style: TextStyle(fontSize: 18, color: AppColors.darkText),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWorkoutState(Exercise currentEx, int totalExercises) {
+    final prevEx = _getPreviousExerciseLog(currentEx.name);
+    final int nextSetNumber = currentEx.currentSet > currentEx.sets ? currentEx.sets : currentEx.currentSet;
+    final double currentExProgress = (currentEx.currentSet - 1) / currentEx.sets;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: 10),
+            Text(
+              'Exercise ${_currentExerciseIndex + 1} of $totalExercises',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 15),
+            // Exercise Name Card
+            Card(
+              elevation: 12,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kBorderRadius)),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(25),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(kBorderRadius),
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      currentEx.name,
+                      textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 14,
-                        color: textMuted, 
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    Text.rich(
+                      TextSpan(
+                        text: 'SET ',
+                        style: const TextStyle(fontSize: 20, color: Colors.white70),
+                        children: [
+                          TextSpan(
+                            text: '$nextSetNumber',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 32, color: AppColors.accent),
+                          ),
+                          const TextSpan(text: ' / '),
+                          TextSpan(
+                            text: '${currentEx.sets}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 32, color: Colors.white),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  gradient: getLightGradient(), 
-                ),
-                child: Center(
-                  child: Icon(
-                    workout.name.contains('Custom') ? Icons.folder_copy : Icons.directions_run, 
-                    size: 35, 
-                    color: primaryGradientEnd, 
+            ),
+
+            const SizedBox(height: 30),
+
+            // Target Reps & Initial Weight
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildTargetInfo(Icons.repeat, 'Reps', currentEx.reps),
+                _buildTargetInfo(Icons.fitness_center_rounded, 'Target Weight', currentEx.initialWeight),
+              ],
+            ),
+
+            const SizedBox(height: 30),
+
+            // Input for Actual Weight
+            TextFormField(
+              controller: _currentWeightController,
+                style: const TextStyle(color: Colors.white), // 👈 هنا اللون الأسود
+
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.text,
+              
+              decoration: InputDecoration(
+                
+                labelText: 'Actual Weight Used for This Set',
+                labelStyle: const TextStyle(color: AppColors.darkText),
+                hintText: 'e.g. 50kg',
+                prefixIcon: const Icon(Icons.balance, color: AppColors.primary),
+                contentPadding: const EdgeInsets.all(18),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Please enter the weight used';
+                return null;
+              },
+            ),
+
+            const SizedBox(height: 25),
+
+            // Previous Performance Log
+            if (_isLoadingLog)
+              const Center(child: CircularProgressIndicator(color: AppColors.accent))
+            else if (prevEx != null)
+              _buildPreviousLogCard(prevEx),
+
+            const SizedBox(height: 20),
+
+            // Current Exercise Progress Bar
+            _buildExerciseProgressBar(currentExProgress),
+
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTargetInfo(IconData icon, String label, String value) {
+    return Column(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 30),
+        const SizedBox(height: 5),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, color: Colors.grey),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.darkText),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPreviousLogCard(Exercise prevEx) {
+    return Card(
+      elevation: 4,
+      color: const Color(0xFFE3F2FD), // Very Light Blue Background
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: Padding(
+        padding: const EdgeInsets.all(15.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Last Performance 💪',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
+            ),
+            const Divider(height: 10),
+            Wrap(
+              spacing: 10.0,
+              runSpacing: 8.0,
+              children: List.generate(prevEx.actualWeights.length, (index) {
+                return Chip(
+                  label: Text(
+                    'Set ${index + 1}: ${prevEx.reps} x ${prevEx.actualWeights[index]}',
+                    style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
                   ),
+                  backgroundColor: AppColors.primary.withOpacity(0.8),
+                );
+              }),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildExerciseProgressBar(double progress) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Current Exercise Progress', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkText)),
+            Text('${(progress * 100).toStringAsFixed(0)}%'),
+          ],
+        ),
+        const SizedBox(height: 5),
+        LinearProgressIndicator(
+          value: progress,
+          backgroundColor: Colors.grey.shade300,
+          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+          minHeight: 10,
+          borderRadius: BorderRadius.circular(5),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompletionState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Container(
+          padding: const EdgeInsets.all(30),
+          decoration: BoxDecoration(
+            color: AppColors.accent.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(kBorderRadius),
+            border: Border.all(color: AppColors.accent, width: 2),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('CONGRATULATIONS! 🎉', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.accent)),
+              const SizedBox(height: 15),
+              Text(
+                'You have successfully completed the routine "${widget.routine.name}".',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18, color: Colors.white),
+              ),
+              const SizedBox(height: 25),
+              ElevatedButton.icon(
+                onPressed: _finishWorkout,
+                icon: const Icon(Icons.home_rounded, size: 24),
+                label: const Text('Return to Home'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                 ),
               ),
             ],
@@ -969,443 +1414,12 @@ class _MyTrainsPageState extends State<MyTrainsPage> {
   }
 }
 
-// ======================================================================
-// 6. UI: Live Tracking Page (TrackingPage) 
-// ======================================================================
-
-class TrackingPage extends StatefulWidget {
-  final List<ExerciseTemplate> selectedExercises;
-  final String routineName;
-
-  const TrackingPage({super.key, required this.selectedExercises, required this.routineName});
-
-  @override
-  State<TrackingPage> createState() => _TrackingPageState();
-}
-
-class _TrackingPageState extends State<TrackingPage> {
-  final WorkoutAnalysisService _loggerService = WorkoutAnalysisService();
-  
-  double _currentWeight = 10.0;
-  int _currentReps = 10;
-  int _currentRpe = 8; 
-  
-  ExerciseLog? _currentExerciseLog;
-  SetEntry? _lastSet; 
-  int _currentExerciseIndex = 0;
-  double _totalRoutineVolume = 0.0; 
-  
-  Timer? _restTimer;
-  int _secondsRemaining = 0; 
-  static const int _restDuration = 90; 
-
-  @override
-  void initState() {
-    super.initState();
-    _loadExerciseData();
-    _loadTotalRoutineVolume();
-  }
-  
-  @override
-  void dispose() {
-    _restTimer?.cancel();
-    super.dispose();
-  }
-  
-  E? firstWhereOrNull<E>(Iterable<E> iterable, bool Function(E element) test) {
-    for (final element in iterable) {
-      if (test(element)) {
-        return element;
-      }
+// Helper extension for list searching
+extension IterableExtension<T> on Iterable<T> {
+  T? firstWhereOrNull(bool Function(T element) test) {
+    for (var element in this) {
+      if (test(element)) return element;
     }
     return null;
-  }
-
-  Future<void> _loadTotalRoutineVolume() async {
-      final allLogs = await _loggerService._repository.getAllLogs();
-      final today = DateTime.now().toIso8601String().substring(0, 10);
-      
-      double totalVolume = 0.0;
-      for (var exercise in widget.selectedExercises) {
-          final logId = '${exercise.name}-$today';
-          final log = firstWhereOrNull(allLogs, (l) => l.id == logId);
-          if (log != null) {
-              totalVolume += log.totalVolume;
-          }
-      }
-      setState(() {
-          _totalRoutineVolume = totalVolume;
-      });
-  }
-
-  Future<void> _loadExerciseData() async {
-    final currentExerciseName = widget.selectedExercises[_currentExerciseIndex].name;
-    final log = await _loggerService.getCurrentDayLog(currentExerciseName);
-    final lastSet = await _loggerService.getLastRecordedSet(currentExerciseName);
-
-    setState(() {
-      _currentExerciseLog = log;
-      _lastSet = lastSet;
-      
-      _currentWeight = _lastSet?.weight ?? 10.0;
-      _currentReps = _lastSet?.reps ?? 10;
-      _currentRpe = _lastSet?.rpe ?? 8;
-    });
-  }
-
-  void _startRestTimer() {
-    _restTimer?.cancel();
-    setState(() {
-      _secondsRemaining = _restDuration;
-    });
-
-    _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_secondsRemaining > 0) {
-        setState(() {
-          _secondsRemaining--;
-        });
-      } else {
-        timer.cancel();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('انتهت فترة الراحة! ابدأ مجموعتك التالية 💪')),
-        );
-      }
-    });
-  }
-
-  Future<void> _logAndNext() async {
-    if (_currentWeight <= 0 || _currentReps <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء إدخال الوزن والعدات بشكل صحيح.')),
-      );
-      return;
-    }
-
-    await _loggerService.logNewSet(
-      exerciseName: widget.selectedExercises[_currentExerciseIndex].name,
-      weight: _currentWeight,
-      reps: _currentReps,
-      rpe: _currentRpe,
-    );
-    
-    _startRestTimer();
-    await _loadExerciseData(); 
-    await _loadTotalRoutineVolume();
-  }
-
-  Future<void> _deleteSet(SetEntry set) async {
-    if (_currentExerciseLog == null) return;
-    final logId = _currentExerciseLog!.id; 
-    await _loggerService.deleteSet(logId: logId, setNumber: set.setNumber);
-    await _loadExerciseData(); 
-    await _loadTotalRoutineVolume();
-  }
-
-  void _goToNextExercise() {
-    if (_currentExerciseIndex < widget.selectedExercises.length - 1) {
-      setState(() {
-        _currentExerciseIndex++;
-      });
-      _loadExerciseData();
-      _restTimer?.cancel(); 
-    } else {
-       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('أنهيت جميع التمارين! تهانينا 🎉')),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final currentExercise = widget.selectedExercises[_currentExerciseIndex];
-    final logSets = _currentExerciseLog?.sets ?? [];
-    final progress = (_currentExerciseIndex + 1) / widget.selectedExercises.length;
-
-    return Scaffold(
-      backgroundColor: Colors.white, 
-      appBar: AppBar(
-        title: Text(widget.routineName, style: const TextStyle(color: textDark)),
-        backgroundColor: Colors.white, 
-        elevation: 0,
-        iconTheme: const IconThemeData(color: textDark),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Routine Progress
-            _buildProgressHeader(progress, currentExercise.name),
-            const SizedBox(height: 20),
-            
-            // 5.1: مؤقت الراحة
-            _buildTimerWidget(),
-            const SizedBox(height: 20),
-            
-            // 5.2: إدخال المجموعة المقترحة
-            const Text('تسجيل المجموعة الحالية:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
-            _buildSuggestedSet(),
-            const SizedBox(height: 10),
-
-            Row(
-              children: [
-                _buildStepperInput(
-                  label: 'الوزن (كجم)',
-                  value: _currentWeight,
-                  step: 2.5,
-                  min: 0.0,
-                  onChanged: (newValue) => setState(() => _currentWeight = max(0.0, newValue)),
-                ),
-                const SizedBox(width: 8),
-                _buildStepperInput(
-                  label: 'العدات',
-                  value: _currentReps.toDouble(),
-                  step: 1.0,
-                  min: 1.0, 
-                  onChanged: (newValue) => setState(() => _currentReps = max(1, newValue.toInt())),
-                ),
-                const SizedBox(width: 8),
-                _buildStepperInput(
-                  label: 'RPE',
-                  value: _currentRpe.toDouble(),
-                  step: 1.0,
-                  min: 6.0,
-                  max: 10.0,
-                  onChanged: (newValue) => setState(() => _currentRpe = newValue.toInt()),
-                ),
-              ],
-            ),
-            const SizedBox(height: 15),
-
-            SizedBox(
-              width: double.infinity,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  gradient: getPrimaryGradient(),
-                ),
-                child: ElevatedButton.icon(
-                  onPressed: _logAndNext,
-                  icon: const Icon(Icons.check_circle_outline, color: Colors.white),
-                  label: Text('تسجيل المجموعة رقم ${logSets.length + 1}', style: const TextStyle(fontSize: 16, color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent, 
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            
-            // 5.3: زر الانتقال
-             SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _goToNextExercise,
-                icon: const Icon(Icons.skip_next, color: textMuted),
-                label: Text('انهاء ${currentExercise.name} والانتقال', style: const TextStyle(fontSize: 16, color: textMuted)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  foregroundColor: textMuted,
-                  side: BorderSide(color: textMuted.withOpacity(0.5)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 30),
-
-            // 5.4: سجل المجموعات الحالي
-            const Text('سجل المجموعات التي أكملتها:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
-            logSets.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.only(top: 10),
-                    child: Text('لم يتم تسجيل مجموعات بعد لهذا التمرين.', style: TextStyle(color: textMuted)),
-                  )
-                : _buildSetsTable(logSets),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ======================================================================
-  // دوال بناء الواجهة المساعدة 
-  // ======================================================================
-  
-  Widget _buildProgressHeader(double progress, String currentExerciseName) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'التمرين الحالي: $currentExerciseName',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryGradientEnd),
-        ),
-        const SizedBox(height: 4),
-        LinearProgressIndicator(
-          value: progress,
-          backgroundColor: textMuted.withOpacity(0.2),
-          valueColor: AlwaysStoppedAnimation<Color>(primaryGradientStart),
-          minHeight: 8,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${_currentExerciseIndex + 1} من ${widget.selectedExercises.length} تمارين مكتملة',
-              style: const TextStyle(fontSize: 12, color: textMuted),
-            ),
-            Text(
-              'الحجم الكلي اليوم: ${_totalRoutineVolume.toStringAsFixed(0)} كجم',
-              style: const TextStyle(fontSize: 12, color: textMuted, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimerWidget() {
-    final minutes = (_secondsRemaining ~/ 60).toString().padLeft(2, '0');
-    final seconds = (_secondsRemaining % 60).toString().padLeft(2, '0');
-    final isRunning = _secondsRemaining > 0;
-    
-    return Card(
-      elevation: 4,
-      color: isRunning ? primaryGradientStart.withOpacity(0.1) : cardBackground, 
-      child: ListTile(
-        leading: Icon(isRunning ? Icons.timer_sharp : Icons.snooze, color: isRunning ? primaryGradientStart : textMuted, size: 30),
-        title: Text(isRunning ? 'وقت الراحة المتبقي' : 'جاهز للمجموعة التالية!', style: const TextStyle(color: textDark)),
-        subtitle: Text('$minutes:$seconds', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isRunning ? primaryGradientEnd : textDark)),
-        trailing: isRunning ? TextButton(
-          onPressed: () { _restTimer?.cancel(); setState(() => _secondsRemaining = 0); },
-          child: const Text('إيقاف', style: TextStyle(color: primaryGradientStart)),
-        ) : null,
-      ),
-    );
-  }
-
-  Widget _buildSuggestedSet() {
-    if (_lastSet == null) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 8.0),
-        child: Text('لا يوجد سجل سابق لهذا التمرين.', style: TextStyle(color: textMuted)),
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Text(
-        'آخر مجموعة مسجلة: ${_lastSet!.weight.toStringAsFixed(1)} كجم × ${_lastSet!.reps} عدة، RPE: ${_lastSet!.rpe} (للمساعدة)',
-        style: const TextStyle(fontSize: 14, color: textMuted), 
-      ),
-    );
-  }
-
-  Widget _buildStepperInput({
-      required String label,
-      required double value,
-      required double step,
-      required double min,
-      double max = double.infinity,
-      required ValueChanged<double> onChanged,
-    }) {
-    final isInteger = step == 1.0;
-    final displayValue = isInteger ? value.toInt().toString() : value.toStringAsFixed(1);
-
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 14, color: textDark, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 5),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: textMuted.withOpacity(0.5)),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStepperButton(Icons.remove, onPressed: () {
-                  if (value > min) {
-                    onChanged(value - step);
-                  }
-                }),
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      displayValue,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark),
-                    ),
-                  ),
-                ),
-                _buildStepperButton(Icons.add, onPressed: () {
-                  if (value < max) {
-                    onChanged(value + step);
-                  }
-                }),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildStepperButton(IconData icon, {required VoidCallback onPressed}) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: primaryGradientEnd.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: IconButton(
-        icon: Icon(icon, size: 20, color: primaryGradientEnd),
-        onPressed: onPressed,
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-      ),
-    );
-  }
-
-  Widget _buildSetsTable(List<SetEntry> sets) {
-    if (_currentExerciseLog == null) return const SizedBox.shrink();
-    
-    return Card(
-      elevation: 2,
-      color: cardBackground, 
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('#', style: TextStyle(fontWeight: FontWeight.bold, color: textDark))),
-            DataColumn(label: Text('الوزن (كجم)', style: TextStyle(fontWeight: FontWeight.bold, color: textDark))),
-            DataColumn(label: Text('العدات', style: TextStyle(fontWeight: FontWeight.bold, color: textDark))),
-            DataColumn(label: Text('RPE', style: TextStyle(fontWeight: FontWeight.bold, color: textDark))),
-            DataColumn(label: Text('حجم', style: TextStyle(fontWeight: FontWeight.bold, color: textDark))),
-            DataColumn(label: Text('حذف', style: TextStyle(fontWeight: FontWeight.bold, color: textDark))),
-          ],
-          rows: sets.map((set) {
-            return DataRow(cells: [
-              DataCell(Text(set.setNumber.toString(), style: const TextStyle(fontWeight: FontWeight.bold, color: textDark))),
-              DataCell(Text(set.weight.toStringAsFixed(1), style: const TextStyle(color: textDark))),
-              DataCell(Text(set.reps.toString(), style: const TextStyle(color: textDark))),
-              DataCell(Text(set.rpe.toString(), style: const TextStyle(color: textDark))),
-              DataCell(Text(set.volume.toStringAsFixed(0), style: const TextStyle(color: textDark))),
-              DataCell(
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: primaryGradientStart),
-                  onPressed: () => _deleteSet(set), 
-                  tooltip: 'حذف المجموعة',
-                  constraints: const BoxConstraints(),
-                ),
-              ),
-            ]);
-          }).toList(),
-        ),
-      ),
-    );
   }
 }

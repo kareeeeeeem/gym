@@ -1,4 +1,5 @@
 import 'package:fitnessapp/view/dashboard/profile/ContactUsView.dart';
+import 'package:fitnessapp/view/dashboard/profile/Settings%20and%20Policy%20Views%20for%20Ego%20Gym.dart';
 import 'package:fitnessapp/view/dashboard/profile/kareemEmda.dart';
 import 'package:fitnessapp/view/dashboard/profile/sendNotifiactions.dart';
 import 'package:fitnessapp/view/welcome/on_boarding/start_screen.dart';
@@ -302,7 +303,7 @@ class PersonalDataView extends StatelessWidget {
           ContentRow(label: "Full Name", value: userData['fullName'] ?? "N/A"),
           ContentRow(label: "Email", value: userData['email'] ?? "N/A"),
           // ContentRow(label: "Date of Birth", value: userData['dob'] ?? "N/A"),
-          ContentRow(label: "Gender", value: userData['gender'] ?? "N/A"),
+          //ContentRow(label: "Gender", value: userData['gender'] ?? "N/A"),
           // ContentRow(label: "Goal", value: userData['goal'] ?? "N/A"),
           // ContentRow(label: "Height (cm)", value: userData['height'] ?? "N/A"),
           // ContentRow(label: "Weight (kg)", value: userData['weight'] ?? "N/A"),
@@ -1185,6 +1186,67 @@ void _fetchUserData() async {
                        Navigator.push(context, MaterialPageRoute(builder: (context) =>  const HowUsView()));
                     }
                   ),
+                   ///////////////////////////////////////////////
+                   ///
+                   ///
+                   ///
+                   ///
+                  
+             SettingRow(
+          iconData: Icons.notifications_active,
+          title: "Notifications",
+          onPressed: () {
+             Navigator.push(context, MaterialPageRoute(builder: (context) =>  const NotificationSettingsView()));
+          }
+        ),
+        
+        // Row 3: Account Management
+      
+
+        // Row 4: Language
+        // SettingRow(
+        //   iconData: Icons.language,
+        //   title: "Language and Region",
+        //   onPressed: () {
+        //      Navigator.push(context, MaterialPageRoute(builder: (context) =>  const LanguageSelectionView()));
+        //   }
+        // ),
+        
+        // Row 5: Theme
+        // SettingRow(
+        //   iconData: Icons.brightness_6,
+        //   title: "Appearance (Dark Mode)",
+        //   onPressed: () {
+        //      Navigator.push(context, MaterialPageRoute(builder: (context) =>  const ThemeSettingsView()));
+        //   }
+        // ),
+
+        // Row 6: Terms of Use
+        SettingRow(
+          iconData: Icons.description,
+          title: "Terms of Use",
+          onPressed: () {
+             Navigator.push(context, MaterialPageRoute(builder: (context) =>  const TermsOfServiceView()));
+          }
+        ),
+
+        // Row 7: Privacy Policy
+        SettingRow(
+          iconData: Icons.lock_outline,
+          title: "Privacy Policy",
+          onPressed: () {
+             Navigator.push(context, MaterialPageRoute(builder: (context) =>  const PrivacyPolicyView()));
+          }
+        ),
+
+        // Row 8: Help Center
+        SettingRow(
+          iconData: Icons.help_outline,
+          title: "Help Center",
+          onPressed: () {
+             Navigator.push(context, MaterialPageRoute(builder: (context) =>  const HelpCenterView()));
+          }
+        ),
                 ],
               ),
             ),

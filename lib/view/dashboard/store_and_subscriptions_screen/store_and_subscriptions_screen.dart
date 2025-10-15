@@ -356,6 +356,8 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
       textDirection: TextDirection.rtl,
       child: DefaultTabController(
         length: 2,
+        initialIndex: 1, // ✅ تم التعديل: للبدء بشاشة المنتجات (المؤشر 1)
+
         child: Builder(
           builder: (context) {
             final tabController = DefaultTabController.of(context);
@@ -389,7 +391,7 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
                       unselectedLabelColor: AppColors.darkGrayColor,
                       labelStyle: TextStyle(fontWeight: FontWeight.w700),
                       tabs: [
-                        Tab(text: 'Subscriptions & Offers'),
+                        Tab(text: 'Subscriptions'),
                         Tab(text: 'Products Store'),
                       ],
                     ),
@@ -618,7 +620,7 @@ class SubscriptionCard extends StatelessWidget {
                       ),
                       child: Text(
                         sub.duration,
-                        style: const TextStyle(color: AppColors.primaryColor1, fontSize: 12, fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -846,7 +848,7 @@ class ProductCard extends StatelessWidget {
                 children: [
                   Text(
                     product.name,
-                    maxLines: 1,
+                    maxLines: 5,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         color: AppColors.whiteColor,
@@ -856,6 +858,9 @@ class ProductCard extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     product.category,
+                    maxLines: 5,
+                    overflow: TextOverflow.ellipsis,
+                    
                     style: const TextStyle(color: AppColors.darkGrayColor, fontSize: 10),
                   ),
                   const SizedBox(height: 8),
@@ -880,7 +885,7 @@ class ProductCard extends StatelessWidget {
                               ? "${product.discountedPrice.toStringAsFixed(2)} ج.م" 
                               : "${product.price.toStringAsFixed(2)} ج.م",
                             style: TextStyle(
-                              color: product.hasDiscount ? AppColors.accentColor : AppColors.primaryColor1,
+                              color: product.hasDiscount ? AppColors.accentColor : AppColors.accentColor,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
@@ -1072,6 +1077,22 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // =========================================================================

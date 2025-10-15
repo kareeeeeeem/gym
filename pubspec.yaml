@@ -60,6 +60,8 @@ dependencies:
 
   badges: ^3.1.2
 
+  uuid: ^4.5.1
+
 
 
 

@@ -1,13 +1,13 @@
 import 'package:fitnessapp/const/utils/app_colors.dart';
 import 'package:fitnessapp/view/dashboard/activity/WorkoutLogPage.dart';
-import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/upcoming_workout_row.dart';
-import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/what_train_row.dart';
+import 'package:fitnessapp/view/dashboard/activity/off/what_train_row.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../../const/common_widgets/round_button.dart';
-import 'workour_detail_view.dart';
+import '../../../const/common_widgets/round_button.dart';
+import 'whatDoYouWant.dart'; // نفترض أن هذا يحتوي على WorkoutDetailView
 
+// الكلاس ActivityAppColors
 class ActivityAppColors {
   static const Color whiteColor = Color(0xFFFFFFFF);
   static const Color blackColor = Color(0xFF1D1617);
@@ -22,7 +22,7 @@ class ActivityAppColors {
   ];
 }
 
-
+// الكلاس ActivityScreen
 class ActivityScreen extends StatefulWidget {
   const ActivityScreen({Key? key}) : super(key: key);
 
@@ -93,9 +93,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
                      Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (context) => MyTrainsPage(
-                                              
-                                            )));
+                                        // 💡 تم استدعاء WorkoutLogPage التي تحتوي على الروتينات المخصصة
+                                        builder: (context) => WorkoutLogPage())); 
                           
                   },
                   child: Container(
@@ -202,17 +201,93 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     SizedBox(
                       height: media.width * 0.05,
                     ),
+                     Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 24, horizontal: 24),
+                      decoration: BoxDecoration(
+                        // خلفية فاتحة للجدول اليومي
+                        color: ActivityAppColors.primaryColor1.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            " My previous exercises",
+                            style: TextStyle(
+                                color: ActivityAppColors.blackColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700),
+                          ),
+                          SizedBox(
+                            width: 70,
+                            height: 25,
+                            child: RoundButton(
+                              title: "Check",
+                              // ✅ FIX 2: تم استبدال 'gradientColors' بـ 'colors' لحل مشكلة المعامل غير المعرّف
+                              onPressed: ()  {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        // 💡 تم استدعاء WorkoutLogPage التي تحتوي على الروتينات المخصصة
+                                        builder: (context) => WorkoutLogPage())); 
+                          
+                  },
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      height: media.width * 0.05,
+                    ),
+                    // Row(
+                    //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //   children: [
+                    //     const Text(
+                    //       "Upcoming Workout",
+                    //       style: TextStyle(
+                    //           color: ActivityAppColors.blackColor,
+                    //           fontSize: 16,
+                    //           fontWeight: FontWeight.w700),
+                    //     ),
+                    //     TextButton(
+                    //       onPressed: () {},
+                    //       child: const Text(
+                    //         "See More",
+                    //         style: TextStyle(
+                    //             color: ActivityAppColors.darkGrayColor, // لون رمادي داكن
+                    //             fontSize: 14,
+                    //             fontWeight: FontWeight.w700),
+                    //       ),
+                    //     )
+                    //   ],
+                    // ),
+                    // // 🔴 حل مشكلة الحجم اللانهائي (Infinite Size) بإزالة Expanded 
+                    // // وحيث أن هذا الـ ListView معطى الخصائص shrinkWrap: true و physics: NeverScrollableScrollPhysics، فإنه يعمل بشكل صحيح داخل SingleChildScrollView.
+                    // ListView.builder(
+                    //   padding: EdgeInsets.zero,
+                    //   physics: const NeverScrollableScrollPhysics(),
+                    //   shrinkWrap: true,
+                    //   itemCount: latestArr.length,
+                    //   itemBuilder: (context, index) {
+                    //     var wObj = latestArr[index] as Map? ?? {};
+                    //     // 💡 تم تصحيح الـ Widget المستدعى ليكون UpcomingWorkoutRow بدلاً من WorkoutLogPage
+                    //     return WhatTrainRow(wObj: wObj); 
+                    //   }),
+                    
 
                     SizedBox(
                       height: media.width * 0.05,
                     ),
-                    const Text( // تم تعديل Row إلى Text مباشرة لعدم وجود عنصر آخر للمقارنة
+                    const Text( 
                       "What Do You Want to Train:",
                       style: TextStyle(
                           color: ActivityAppColors.blackColor,
                           fontSize: 16,
                           fontWeight: FontWeight.w700),
                     ),
+                    // هذا الـ ListView يعمل بشكل صحيح لأنه يستخدم shrinkWrap: true و physics: NeverScrollableScrollPhysics
                     ListView.builder(
                         padding: EdgeInsets.zero,
                         physics: const NeverScrollableScrollPhysics(),

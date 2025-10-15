@@ -527,28 +527,28 @@ class _WorkoutDetailViewState extends State<WorkoutDetailView> {
                       //     )
                       //   ],
                       // ),
-                      // // SizedBox(
-                      // //   height: media.width * 0.05,
-                      // // ),
-                      // // IconTitleNextRow(
-                      // //     icon: "assets/icons/time_icon.png",
-                      // //     title: "Schedule Workout",
-                      // //     time: "5/27, 09:00 AM",
-                      // //     color: AppColors.primaryColor2.withOpacity(0.3),
-                      // //     onPressed: () {
-                      // //       Navigator.push(context, MaterialPageRoute(builder: (context) => const WorkoutScheduleView()));
-                      // //     }),
-                      // // SizedBox(
-                      // //   height: media.width * 0.02,
-                      // // ),
-                      // // IconTitleNextRow(
-                      // //     icon: "assets/icons/difficulity_icon.png",
-                      // //     title: "Difficulity",
-                      // //     time: "Beginner",
-                      // //     color: AppColors.secondaryColor2.withOpacity(0.3),
-                      // //     onPressed: () {}),
-                      // // SizedBox(
-                      // //   height: media.width * 0.05,
+                      // SizedBox(
+                      //   height: media.width * 0.05,
+                      // ),
+                      // IconTitleNextRow(
+                      //     icon: "assets/icons/time_icon.png",
+                      //     title: "Schedule Workout",
+                      //     time: "5/27, 09:00 AM",
+                      //     color: AppColors.primaryColor2.withOpacity(0.3),
+                      //     onPressed: () {
+                      //       Navigator.push(context, MaterialPageRoute(builder: (context) => const WorkoutScheduleView()));
+                      //     }),
+                      // SizedBox(
+                      //   height: media.width * 0.02,
+                      // ),
+                      // IconTitleNextRow(
+                      //     icon: "assets/icons/difficulity_icon.png",
+                      //     title: "Difficulity",
+                      //     time: "Beginner",
+                      //     color: AppColors.secondaryColor2.withOpacity(0.3),
+                      //     onPressed: () {}),
+                      // SizedBox(
+                      //   height: media.width * 0.05,
                       // ),
 
                        Row(

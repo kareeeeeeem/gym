@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:fitnessapp/const/utils/app_colors.dart';
 import 'package:fitnessapp/view/dashboard/camera/camera_screen.dart';
 import 'package:fitnessapp/view/dashboard/Room/GymRoomsScreen.dart' hide AppColors; // تم دمج hide AppColors (لا حاجة لـ hide إذا كان الاستخدام في هذا الملف لا يتعارض)
-import 'package:fitnessapp/view/dashboard/store_and_subscriptions_screen.dart' hide AppColors; // تم دمج hide AppColors
+import 'package:fitnessapp/view/dashboard/store_and_subscriptions_screen/store_and_subscriptions_screen.dart' hide AppColors; // تم دمج hide AppColors
 import 'package:fitnessapp/view/dashboard/profile/user_profile.dart' hide AppColors; // تم دمج hide AppColors 
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart'; 
 
 import 'home/home_screen.dart';
-import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/activity_screen.dart'; 
+import 'package:fitnessapp/view/dashboard/activity/activity_screen.dart'; 
 
 // =========================================================================
 // تم إزالة تعريف AppColors.

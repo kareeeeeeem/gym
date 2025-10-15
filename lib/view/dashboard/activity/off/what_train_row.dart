@@ -1,10 +1,10 @@
 import 'package:fitnessapp/const/utils/app_colors.dart';
-import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/activity_screen.dart';
-import 'package:fitnessapp/view/dashboard/activity/activity_tracker/widgets/workour_detail_view.dart' hide AppColors;
+import 'package:fitnessapp/view/dashboard/activity/activity_screen.dart';
+import 'package:fitnessapp/view/dashboard/activity/whatDoYouWant.dart' hide AppColors;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../../const/common_widgets/round_button.dart';
+import '../../../../const/common_widgets/round_button.dart';
 
 class WhatTrainRow extends StatelessWidget {
   final Map wObj;

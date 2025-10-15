@@ -179,9 +179,11 @@ void _takePhotoAndSave() async {
     const double charWidthFactor = 0.6; // تقدير نسبة عرض الحرف إلى ارتفاعه
     final int estimatedTextWidth = (fontSize * watermarkText.length * charWidthFactor).round();
     
-    // 🔹 تحديد الموضع (يمين أسفل الصورة)
-    final int textX = originalImage.width - (fontSize * 6); // ← المسافة من اليمين
-    final int textY = originalImage.height - fontSize - 50; // ← المسافة من الأسفل
+    // الموضع الأفقي: ابدأ من عرض الصورة واطرح عرض النص والهامش
+    final int textX = originalImage.width - estimatedTextWidth - 10; 
+    
+    // الموضع العمودي: ابدأ من ارتفاع الصورة واطرح ارتفاع الخط والهامش
+    final int textY = originalImage.height - fontSize - 40; 
 
     // 🔑 التعديل 3: استخدام لون رمادي فاتح شبه شفاف (للحصول على تأثير "مطبوع")
     // بما أن img.drawString لا تدعم الشفافية، نستخدم لون فاتح بديل للأبيض.

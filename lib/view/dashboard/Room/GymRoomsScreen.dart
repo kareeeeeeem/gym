@@ -543,7 +543,7 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
                       if (filteredRooms.isEmpty) {
                         return const Center(
                           child: Text(
-                            'No rooms currently available.\nBe the first to create one!',
+                            'No rooms currently available.\nBe the first to create one! \nor one for you and friends',
 
                               textAlign: TextAlign.center, style: TextStyle(color: AppColors.darkGrayColor)),
                         );
