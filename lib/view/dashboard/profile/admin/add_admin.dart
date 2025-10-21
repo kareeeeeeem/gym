@@ -3,7 +3,7 @@
 // =========================================================================
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:fitnessapp/const/common_widgets/round_button.dart';
-import 'package:fitnessapp/view/dashboard/profile/user_profile.dart' hide RoundButton, RoundButtonType;
+import 'package:fitnessapp/view/dashboard/profile/Profile.dart' hide RoundButton, RoundButtonType;
 import 'package:flutter/material.dart';
 
 // ⚠️ ملاحظة: لا يزال يتعين عليك التأكد من أن كلاسات (RoundButton, PlaceholderPage, EditInputField, AppColors) متاحة ومستوردة بشكل صحيح.

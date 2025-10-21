@@ -322,6 +322,7 @@ class _WorkoutLogPageState extends State<WorkoutLogPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
         title: const Text('Confirm Deletion'),
         content: const Text('Are you sure you want to delete this routine? This action cannot be undone.'),
         actions: [
@@ -413,7 +414,7 @@ class _WorkoutLogPageState extends State<WorkoutLogPage> {
                         Icon(Icons.add_circle_outline, color: Colors.white, size: 30),
                         SizedBox(width: 15),
                         Text(
-                          'Create Workout ',
+                          'custom Workout ',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
@@ -618,7 +619,7 @@ class _CreateRoutineScreenState extends State<CreateRoutineScreen> {
                   children: [
                     const Text(
                       'Routine Name:',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color:Colors.white),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color:Colors.black),
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -675,7 +676,12 @@ class _CreateRoutineScreenState extends State<CreateRoutineScreen> {
 
             // Save Button
             Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.only(
+        top: 8.0, 
+        left: 16.0, 
+        right: 16.0, 
+        bottom: 64.0,
+      ),
               child: ElevatedButton(
                 onPressed: _isSaving ? null : _saveRoutine,
                 child: _isSaving

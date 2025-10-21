@@ -2,6 +2,8 @@
 import 'dart:convert';
 
 import 'package:fitnessapp/view/dashboard/home/notification/notification_screen.dart';
+import 'package:fitnessapp/const/complete_profile_screen.dart' hide DashboardScreen;
+import 'package:fitnessapp/view/dashboard/profile/Profile.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -42,29 +44,65 @@ Future<void> main() async {
 
 // ===========================================================================
 // 🔔 OneSignal
-// ===========================================================================
+// ===========================================================================// main.dart (التعديلات في دالة _initializeOneSignal)
+// main.dart (التعديل النهائي في دالة _initializeOneSignal)
+// main.dart (التعديل النهائي والكامل في دالة _initializeOneSignal)
+
 Future<void> _initializeOneSignal() async {
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
   OneSignal.initialize(OneSignalAppId);
   await OneSignal.Notifications.requestPermission(true);
   OneSignal.User.pushSubscription.optIn();
 
-  // عند استقبال إشعار أثناء عمل التطبيق
+  final prefs = await SharedPreferences.getInstance();
+  final String? savedString = prefs.getString('saved_notifications');
+
+  // 🔥🔥 الحل النهائي لضمان حالة القراءة (isRead) أثناء التحميل 🔥🔥
+  if (savedString != null) {
+    List<dynamic> loadedList = jsonDecode(savedString);
+    List<Map<String, dynamic>> finalLoadedList = loadedList.map((notif) {
+      if (notif is Map<String, dynamic>) {
+        return {
+          "title": notif["title"] ?? "No title",
+          "body": notif["body"] ?? "No message",
+          "time": notif["time"] ?? DateTime.now().toIso8601String(),
+          // 💡 التحقق الصارم: إذا لم يكن isRead موجوداً أو كان null، نعتبره TRUE (مقروء)
+          "isRead": (notif.containsKey("isRead") && notif["isRead"] is bool) ? notif["isRead"] : true,
+        };
+      }
+      return null; // تجاهل العناصر غير السليمة
+    }).where((n) => n != null).cast<Map<String, dynamic>>().toList();
+    
+    // تحديث القائمة العامة بحالة القراءة الصحيحة
+    notificationsNotifier.value = finalLoadedList;
+    
+    // تحديث العداد بناءً على القائمة المحملة
+    await prefs.setInt('unread_count', finalLoadedList.where((n) => n["isRead"] == false).length);
+  }
+  // 🔥🔥 نهاية قسم التحميل 🔥🔥
+  
+  // عند استقبال إشعار أثناء عمل التطبيق (نحتفظ بالتعديل الذي يمنع التضارب)
   OneSignal.Notifications.addForegroundWillDisplayListener((event) async {
     final notif = event.notification;
     final newNotif = {
       "title": notif.title ?? "No title",
       "body": notif.body ?? "No message",
       "time": DateTime.now().toIso8601String(),
+      "isRead": false, // الإشعار الجديد دائماً غير مقروء
     };
 
-    // أضف للإشعارات الحالية
-    notificationsNotifier.value = [newNotif, ...notificationsNotifier.value];
+    // نأخذ نسخة ثابتة من القائمة الحالية التي تحمل isRead الصحيح
+    final currentNotifications = notificationsNotifier.value;
+    
+    // تحديث الـ ValueNotifier أولاً
+    notificationsNotifier.value = [newNotif, ...currentNotifications]; 
 
-    // خزّنها في SharedPreferences
+    // حفظ القائمة المحدثة بالكامل بعد التعديل
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('saved_notifications', jsonEncode(notificationsNotifier.value));
-    await prefs.setInt('unread_count', notificationsNotifier.value.length);
+    
+    // عد الإشعارات التي isRead فيها false
+    await prefs.setInt('unread_count', notificationsNotifier.value.where((n) => n["isRead"] == false).length);
 
     event.notification.display();
     print("📩 Notification received: $newNotif");
@@ -76,7 +114,6 @@ Future<void> _initializeOneSignal() async {
 
   print("✅ OneSignal initialized successfully!");
 }
-
 // ===========================================================================
 // 🏁 Root App
 // ===========================================================================
@@ -108,6 +145,12 @@ class MyRootApp extends StatelessWidget {
         final initialScreen = snapshot.hasData
             ? DashboardScreen(cameras: cameras)
             : const StartScreen();
+
+
+       // final initialScreen = const UserProfile();
+
+
+
 
         return MyApp(
           initialScreen: initialScreen,

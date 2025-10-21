@@ -4,7 +4,7 @@ import 'package:fitnessapp/const/utils/app_colors.dart';
 import 'package:fitnessapp/view/dashboard/camera/camera_screen.dart';
 import 'package:fitnessapp/view/dashboard/Room/GymRoomsScreen.dart' hide AppColors;
 import 'package:fitnessapp/view/dashboard/store_and_subscriptions_screen/store_and_subscriptions_screen.dart' hide AppColors;
-import 'package:fitnessapp/view/dashboard/profile/user_profile.dart' hide AppColors; 
+import 'package:fitnessapp/view/dashboard/profile/Profile.dart' hide AppColors; 
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart'; 
 

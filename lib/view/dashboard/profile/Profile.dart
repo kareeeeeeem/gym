@@ -1,7 +1,8 @@
-import 'package:fitnessapp/view/dashboard/profile/ContactUsView.dart';
-import 'package:fitnessapp/view/dashboard/profile/Settings%20and%20Policy%20Views%20for%20Ego%20Gym.dart';
-import 'package:fitnessapp/view/dashboard/profile/kareemEmda.dart';
-import 'package:fitnessapp/view/dashboard/profile/sendNotifiactions.dart';
+import 'package:fitnessapp/view/dashboard/profile/contact/ContactUsView.dart';
+import 'package:fitnessapp/view/dashboard/profile/contact/kareemEmda.dart';
+import 'package:fitnessapp/view/dashboard/profile/member/MembersListScreen.dart';
+import 'package:fitnessapp/view/dashboard/profile/setting/Settings%20and%20Policy%20Views%20for%20Ego%20Gym.dart';
+import 'package:fitnessapp/view/dashboard/profile/admin/sendNotifiactions.dart';
 import 'package:fitnessapp/view/welcome/on_boarding/start_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -485,14 +486,14 @@ class _SettingViewState extends State<SettingView> {
         const Text("Security:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.whiteColor)),
         
         if (widget.isAdmin) 
-            SettingRow(
-              iconData: Icons.security, 
-              title: "Manage Admins", 
-              onPressed: () {
-                // ✅ التوجيه إلى شاشة إدارة المدراء
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageAdminsView()));
-              }
-            ),
+            // SettingRow(
+            //   iconData: Icons.security, 
+            //   title: "Manage Admins", 
+            //   onPressed: () {
+            //     // ✅ التوجيه إلى شاشة إدارة المدراء
+            //     Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageAdminsView()));
+            //   }
+            // ),
         SettingRow(
           iconData: Icons.lock, 
           title: "Change Password",
@@ -538,16 +539,13 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
   
   void _updatePassword() async {
     final user = FirebaseAuth.instance.currentUser;
-    print('DEBUG_PASSWORD: Attempting to update password.');
 
     if (user == null || user.email == null) {
-      print('DEBUG_PASSWORD: User is null or email is missing.');
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ المستخدم غير مسجل الدخول أو البريد غير متوفر.')));
       return;
     }
     
     if (_newPasswordController.text.trim() != _confirmPasswordController.text.trim()) {
-      print('DEBUG_PASSWORD: New passwords do not match.');
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ كلمة المرور الجديدة وتأكيدها غير متطابقتين.')));
       return;
     }
@@ -556,31 +554,26 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
     final String newPassword = _newPasswordController.text.trim();
     
     if (newPassword.length < 6) {
-      print('DEBUG_PASSWORD: New password too short.');
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل.')));
       return;
     }
 
 
     try {
-      print('DEBUG_PASSWORD: Re-authenticating user: ${user.email}');
       AuthCredential credential = EmailAuthProvider.credential(
         email: user.email!, 
         password: currentPassword
       );
       
       await user.reauthenticateWithCredential(credential);
-      print('DEBUG_PASSWORD: Re-authentication successful. Updating password...');
       await user.updatePassword(newPassword);
 
-      print('DEBUG_PASSWORD: Password updated successfully.');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تم تحديث كلمة المرور بنجاح!')));
         Navigator.pop(context); 
       }
 
     } on FirebaseAuthException catch (e) {
-      print('DEBUG_PASSWORD: FirebaseAuthException: ${e.code} - ${e.message}');
       String errorMessage = 'حدث خطأ غير معروف.';
       if (e.code == 'wrong-password' || e.code == 'user-not-found') {
         errorMessage = '❌ كلمة المرور الحالية غير صحيحة.';
@@ -590,7 +583,6 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
       
     } catch (e) {
-      print('DEBUG_PASSWORD: General Error: $e');
        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ فشل التحديث. تأكد من أنك متصل بالإنترنت.')));
     }
   }
@@ -645,18 +637,15 @@ class _ManageAdminsViewState extends State<ManageAdminsView> {
   // 1. Function to find user by email and toggle admin status
   void _toggleAdminRole(bool makeAdmin) async {
     final email = _emailController.text.trim().toLowerCase();
-    print('DEBUG_ADMIN: Attempting to toggle role for email: $email, makeAdmin: $makeAdmin');
 
     if (email.isEmpty || !email.contains('@')) {
       _showSnackbar('❌ يرجى إدخال بريد إلكتروني صحيح.');
-      print('DEBUG_ADMIN: Invalid email format.');
       return;
     }
 
     // Protection against modifying current user's role
     if (email == currentUserEmail) {
       _showSnackbar('❌ لا يمكنك تعديل صلاحياتك كـ Admin عبر هذه الشاشة. أنت الأدمن الأصلي.');
-      print('DEBUG_ADMIN: Attempt to modify current user\'s role blocked.');
       return;
     }
 
@@ -664,7 +653,6 @@ class _ManageAdminsViewState extends State<ManageAdminsView> {
 
     try {
       // 1. Search for user by email (Requires creating an index in Firestore console)
-      print('DEBUG_ADMIN: Searching for user document by email...');
       final querySnapshot = await FirebaseFirestore.instance
           .collection('users')
           .where('email', isEqualTo: email)
@@ -673,13 +661,11 @@ class _ManageAdminsViewState extends State<ManageAdminsView> {
 
       if (querySnapshot.docs.isEmpty) {
         _showSnackbar('❌ لم يتم العثور على مستخدم مسجل بهذا الإيميل: $email. تأكد من أن المستخدم قام بتسجيل الدخول مرة واحدة على الأقل وأن الإيميل مسجل في Firestore.');
-        print('DEBUG_ADMIN: User document not found for email: $email');
         return;
       }
 
       final userId = querySnapshot.docs.first.id;
       final existingData = querySnapshot.docs.first.data();
-      print('DEBUG_ADMIN: User found. UID: $userId, Current isAdmin status: ${existingData['isAdmin']}');
 
       // 2. Update the role
       await FirebaseFirestore.instance.collection('users').doc(userId).set({
@@ -690,7 +676,6 @@ class _ManageAdminsViewState extends State<ManageAdminsView> {
         'email': email, // تأكيد وجود الإيميل في الحقل
       }, SetOptions(merge: true));
 
-      print('DEBUG_ADMIN: Firestore update successful.');
 
       String action = makeAdmin ? 'تعيين' : 'إزالة صلاحيات';
       _showSnackbar('✅ تم $action المستخدم $email بنجاح! قد تحتاج بضع ثوانٍ لتحديث القائمة.');
@@ -699,10 +684,8 @@ class _ManageAdminsViewState extends State<ManageAdminsView> {
 
     } on FirebaseException catch (e) {
       _showSnackbar('❌ فشل العملية: ${e.message}');
-      print('DEBUG_ADMIN: FirebaseException: ${e.code} - ${e.message}');
     } catch (e) {
       _showSnackbar('❌ حدث خطأ غير متوقع: $e');
-      print('DEBUG_ADMIN: General Error: $e');
     } finally {
       setState(() => _isLoadingAction = false);
     }
@@ -770,7 +753,6 @@ class _ManageAdminsViewState extends State<ManageAdminsView> {
                 return const Center(child: CircularProgressIndicator(color: AppColors.accentColor));
               }
               if (snapshot.hasError) {
-                print('DEBUG_ADMIN_LIST: Error loading admins: ${snapshot.error}');
                 return Text('خطأ في جلب القائمة: ${snapshot.error}', style: const TextStyle(color: AppColors.redColor));
               }
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -778,7 +760,6 @@ class _ManageAdminsViewState extends State<ManageAdminsView> {
               }
 
               final admins = snapshot.data!.docs;
-              print('DEBUG_ADMIN_LIST: ${admins.length} admins loaded.');
 
               return ListView.builder(
                 // ✅ ضروري ليعمل داخل SingleChildScrollView
@@ -818,24 +799,20 @@ class _ManageAdminsViewState extends State<ManageAdminsView> {
 
 // ✅ الدالة الصحيحة لتشغيل الروابط
 void _showLinkAction(BuildContext context, String linkType, String url) async {
-    print('DEBUG_LINK: Attempting to launch $linkType with URL: $url');
     // 💡 يجب إضافة حزمة 'url_launcher' في pubspec.yaml وتنفيذ flutter pub get
     try {
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-        print('DEBUG_LINK: Launch successful.');
       } else {
          if (context.mounted) {
              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ فشل فتح الرابط ($linkType). تأكد من صلاحية الرابط: $url')));
          }
-         print('DEBUG_LINK: Cannot launch URL.');
       }
     } catch (e) {
        if (context.mounted) {
            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ حدث خطأ غير متوقع أثناء فتح الرابط.')));
        }
-       print('DEBUG_LINK: General Error during launch: $e');
     }
 }
 
@@ -873,11 +850,9 @@ class _UserProfileState extends State<UserProfile> {
 
 // داخل class _UserProfileState
 void _logout() async {
-  print('DEBUG_AUTH: Attempting to log out...');
   try {
     // 1. تسجيل الخروج من Firebase
     await FirebaseAuth.instance.signOut();
-    print('DEBUG_AUTH: Logout successful.');
     
     // 2. 🚀 التنقل إلى شاشة الدخول ومسح كل الصفحات
     if (mounted) {
@@ -895,7 +870,6 @@ void _logout() async {
     }
     
   } catch (e) {
-    print('DEBUG_AUTH: Error during logout: $e');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error during logout: $e")));
     }
@@ -904,10 +878,8 @@ void _logout() async {
 // ✅ تم إصلاح مشكلة عدم جلب البيانات وضمان قراءة الإيميل 
 void _fetchUserData() async {
     final user = FirebaseAuth.instance.currentUser;
-    print('DEBUG_FETCH: Starting data fetch. User: ${user != null ? user.uid : "null"}');
 
     if (user == null) {
-      print('DEBUG_FETCH: Guest user detected.');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -922,7 +894,6 @@ void _fetchUserData() async {
     final userEmail = user.email?.toLowerCase() ?? 'No Email (Auth)';
     
     try {
-      print('DEBUG_FETCH: Fetching user document from Firestore for UID: ${user.uid}');
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       
       String defaultName = user.displayName ?? userEmail.split('@')[0];
@@ -953,12 +924,10 @@ void _fetchUserData() async {
           _email = readAsString(data['email'], userEmail); 
 
           _isLoading = false;
-          print('DEBUG_FETCH: Data loaded successfully. IsAdmin: $_isAdmin, Email: $_email');
         });
       }
       
     } on FirebaseException catch (e) {
-      print('DEBUG_FETCH: Firestore Error: ${e.code} - ${e.message}');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -968,7 +937,6 @@ void _fetchUserData() async {
         });
       }
     } catch (e) {
-       print('DEBUG_FETCH: General Error: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -982,19 +950,15 @@ void _fetchUserData() async {
 
   void _saveUserData(UserData updatedData) async {
     final user = FirebaseAuth.instance.currentUser;
-    print('DEBUG_SAVE: Starting data save. User: ${user != null ? user.uid : "null"}');
     if (user == null) {
-      print('DEBUG_SAVE: Save failed - User is null.');
       return;
     }
     
     try {
-      print('DEBUG_SAVE: Updating Firestore document for UID: ${user.uid}');
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
         updatedData.map((key, value) => MapEntry(key, value)), 
         SetOptions(merge: true) 
       );
-      print('DEBUG_SAVE: Firestore update successful.');
       
       // تحديث الحالة المحلية
       if (mounted) {
@@ -1011,12 +975,10 @@ void _fetchUserData() async {
       }
       
     } on FirebaseException catch (e) {
-      print('DEBUG_SAVE: Firestore Error: ${e.code} - ${e.message}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error saving data: ${e.message}')));
       }
     } catch (e) {
-      print('DEBUG_SAVE: General Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error saving data: $e')));
       }
@@ -1133,9 +1095,19 @@ void _fetchUserData() async {
                     if (_isAdmin) 
                     SettingRow(
                       iconData: Icons.notification_add, 
-                      title: "AdminNotificationScreen",
+                      title: "Send Notification",
                       onPressed: () {
                           Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminNotificationPage()));
+                      },
+                      trailing: const Icon(Icons.security, color: AppColors.redColor), 
+                    ),
+
+                     if (_isAdmin) 
+                    SettingRow(
+                      iconData: Icons.card_membership, 
+                      title: "Members",
+                      onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const MembersListScreen()));
                       },
                       trailing: const Icon(Icons.security, color: AppColors.redColor), 
                     ),
@@ -1192,13 +1164,13 @@ void _fetchUserData() async {
                    ///
                    ///
                   
-             SettingRow(
-          iconData: Icons.notifications_active,
-          title: "Notifications",
-          onPressed: () {
-             Navigator.push(context, MaterialPageRoute(builder: (context) =>  const NotificationSettingsView()));
-          }
-        ),
+        //      SettingRow(
+        //   iconData: Icons.notifications_active,
+        //   title: "Notifications",
+        //   onPressed: () {
+        //      Navigator.push(context, MaterialPageRoute(builder: (context) =>  const NotificationSettingsView()));
+        //   }
+        // ),
         
         // Row 3: Account Management
       

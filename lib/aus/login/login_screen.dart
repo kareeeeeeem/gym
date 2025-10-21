@@ -41,7 +41,8 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _firestore = FirebaseFirestore.instance; // ⬅️ تم إضافته
-  
+    bool _isFacebookLoading = false; // ✅ أضف هذا السطر هنا
+
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -51,11 +52,14 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
-
-  // =========================================================================
-  // 3. Password Reset Logic
+// =========================================================================
+  // 3. facebooklogin Logic
   // =========================================================================
 Future<void> _signInWithFacebook() async {
+  setState(() {
+    _isFacebookLoading = true;
+  });
+
   try {
     final LoginResult result = await FacebookAuth.instance.login();
 
@@ -65,17 +69,38 @@ Future<void> _signInWithFacebook() async {
 
       await FirebaseAuth.instance.signInWithCredential(facebookAuthCredential);
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen(cameras: [],)),
-      );
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const DashboardScreen(cameras: []),
+          ),
+        );
+      }
     } else {
-      print("Facebook login failed: ${result.message}");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Facebook login failed: ${result.message}")),
+        );
+      }
     }
   } catch (e) {
-    print("Error during Facebook login: $e");
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error during Facebook login: $e")),
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isFacebookLoading = false;
+      });
+    }
   }
 }
+ // =========================================================================
+  // 3. Password Reset Logic
+  // =========================================================================
 
   // دالة إرسال رابط إعادة تعيين كلمة المرور - (Forgot Password)
   Future<void> _resetPassword(String email) async {
@@ -350,14 +375,27 @@ Future<void> _signInWithFacebook() async {
 
 // Facebook Login Button
 ElevatedButton.icon(
-  onPressed: _isLoading ? null : _signInWithFacebook,
+  onPressed: _isLoading || _isFacebookLoading ? null : _signInWithFacebook,
   icon: const Icon(Icons.facebook, color: Colors.white),
-  label: const Text(
-    'Continue with Facebook',
-    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-  ),
+  label: _isFacebookLoading
+      ? const SizedBox(
+          height: 20,
+          width: 20,
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2,
+          ),
+        )
+      : const Text(
+          'Continue with Facebook',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
   style: ElevatedButton.styleFrom(
-    backgroundColor: Color(0xFF1877F2), // Facebook Blue
+    backgroundColor: const Color(0xFF1877F2), // Facebook Blue
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
     padding: const EdgeInsets.symmetric(vertical: 14),
     elevation: 5,

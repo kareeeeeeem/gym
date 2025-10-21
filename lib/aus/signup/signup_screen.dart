@@ -1,6 +1,6 @@
 import 'package:fitnessapp/view/dashboard/home/home_screen.dart';
 import 'package:fitnessapp/aus/login/login_screen.dart';
-import 'package:fitnessapp/view/dashboard/profile/complete_profile_screen.dart';
+import 'package:fitnessapp/const/complete_profile_screen.dart';
 import 'package:fitnessapp/view/welcome/welcome_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -52,6 +52,7 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
   final _firestore = FirebaseFirestore.instance; // ⬅️ أضف هذا السطر
   
   
+      bool _isFacebookLoading = false; // ✅ أضف هذا السطر هنا
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -128,65 +129,50 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
   
   
   
-  // Sign in with Facebook
-  Future<void> _signInWithFacebook() async {
+// =========================================================================
+  // 3. facebooklogin Logic
+  // =========================================================================
+Future<void> _signInWithFacebook() async {
   setState(() {
-    _isLoading = true;
-    _errorMessage = null;
+    _isFacebookLoading = true;
   });
 
   try {
-    // 1️⃣ تسجيل الدخول عبر فيسبوك
-    final LoginResult result = await FacebookAuth.instance.login(
-      permissions: ['email', 'public_profile'],
-    );
+    final LoginResult result = await FacebookAuth.instance.login();
 
     if (result.status == LoginStatus.success) {
-      // 2️⃣ جلب بيانات المستخدم من فيسبوك
-      final userData = await FacebookAuth.instance.getUserData();
       final OAuthCredential facebookAuthCredential =
-       FacebookAuthProvider.credential(result.accessToken!.tokenString);
+          FacebookAuthProvider.credential(result.accessToken!.tokenString);
 
-      // 3️⃣ تسجيل الدخول في Firebase باستخدام بيانات فيسبوك
-      final userCredential =
-          await FirebaseAuth.instance.signInWithCredential(facebookAuthCredential);
+      await FirebaseAuth.instance.signInWithCredential(facebookAuthCredential);
 
-      final user = userCredential.user;
-
-      if (user != null) {
-        // 4️⃣ التحقق إن كان المستخدم جديد
-        final userDoc = await _firestore.collection('users').doc(user.uid).get();
-        if (!userDoc.exists) {
-          await _firestore.collection('users').doc(user.uid).set({
-            'email': user.email?.toLowerCase(),
-            'fullName': userData['name'],
-            'isAdmin': false,
-            'createdAt': FieldValue.serverTimestamp(),
-          });
-        }
-
-        // ✅ الانتقال إلى الصفحة التالية
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, CompleteProfileScreen.routeName);
-        }
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CompleteProfileScreen(),
+          ),
+        );
       }
-    } else if (result.status == LoginStatus.cancelled) {
-      setState(() {
-        _errorMessage = 'Facebook login was cancelled.';
-      });
     } else {
-      setState(() {
-        _errorMessage = result.message ?? 'Facebook login failed.';
-      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Facebook login failed: ${result.message}")),
+        );
+      }
     }
   } catch (e) {
-    setState(() {
-      _errorMessage = 'Facebook login error: $e';
-    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error during Facebook login: $e")),
+      );
+    }
   } finally {
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isFacebookLoading = false;
+      });
+    }
   }
 }
 
@@ -380,38 +366,32 @@ class _UserSignUpScreenState extends State<UserSignUpScreen> {
 
 // Facebook Login Button
 ElevatedButton.icon(
-  onPressed: _isLoading ? null : _signInWithFacebook,
+  onPressed: _isLoading || _isFacebookLoading ? null : _signInWithFacebook,
   icon: const Icon(Icons.facebook, color: Colors.white),
-  label: const Text(
-    'Continue with Facebook',
-    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-  ),
+  label: _isFacebookLoading
+      ? const SizedBox(
+          height: 20,
+          width: 20,
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2,
+          ),
+        )
+      : const Text(
+          'Continue with Facebook',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
   style: ElevatedButton.styleFrom(
-    backgroundColor: Color(0xFF1877F2), // Facebook Blue
+    backgroundColor: const Color(0xFF1877F2), // Facebook Blue
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
     padding: const EdgeInsets.symmetric(vertical: 14),
     elevation: 5,
   ),
 ),
-
-
-// ElevatedButton.icon(
-//   onPressed: _isLoading ? null : () => signInWithGoogle(context),
-//   icon: Image.asset(
-//     'assets/icons/google.png', // أيقونة جوجل في مجلدك
-//     height: 24,
-//   ),
-//   label: const Text(
-//     'Continue with Google',
-//     style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
-//   ),
-//   style: ElevatedButton.styleFrom(
-//     backgroundColor: Colors.white,
-//     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-//     padding: const EdgeInsets.symmetric(vertical: 14),
-//     elevation: 5,
-//   ),
-// ),
 
 
                 

@@ -1,6 +1,7 @@
 import 'package:fitnessapp/const/utils/app_colors.dart';
 import 'package:fitnessapp/view/dashboard/activity/WorkoutLogPage.dart';
 import 'package:fitnessapp/view/dashboard/activity/off/what_train_row.dart';
+import 'package:fitnessapp/view/dashboard/activity/library.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -25,6 +26,8 @@ class ActivityAppColors {
 // الكلاس ActivityScreen
 class ActivityScreen extends StatefulWidget {
   const ActivityScreen({Key? key}) : super(key: key);
+    static const String routeName = '/ActivityScreen';
+
 
   @override
   State<ActivityScreen> createState() => _ActivityScreenState();
@@ -94,7 +97,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                                     context,
                                     MaterialPageRoute(
                                         // 💡 تم استدعاء WorkoutLogPage التي تحتوي على الروتينات المخصصة
-                                        builder: (context) => WorkoutLogPage())); 
+                                        builder: (context) => FitnessApp())); 
                           
                   },
                   child: Container(
@@ -237,6 +240,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                           )
                         ],
                       ),
+                      
                     ),
                     SizedBox(
                       height: media.width * 0.05,
@@ -289,23 +293,26 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     ),
                     // هذا الـ ListView يعمل بشكل صحيح لأنه يستخدم shrinkWrap: true و physics: NeverScrollableScrollPhysics
                     ListView.builder(
-                        padding: EdgeInsets.zero,
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: whatArr.length,
-                        itemBuilder: (context, index) {
-                          var wObj = whatArr[index] as Map? ?? {};
-                          return InkWell(
-                              onTap: () {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => WorkoutDetailView(
-                                              dObj: wObj,
-                                            )));
-                              },
-                              child: WhatTrainRow(wObj: wObj));
-                        }),
+  padding: EdgeInsets.zero,
+  physics: const NeverScrollableScrollPhysics(),
+  shrinkWrap: true,
+  itemCount: whatArr.length,
+  itemBuilder: (context, index) {
+    var wObj = whatArr[index] as Map? ?? {};
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WorkoutDetailView(dObj: wObj),
+          ),
+        );
+      },
+      child: WhatTrainRow(wObj: wObj), // ✅ صح كده
+    );
+  },
+),
+
                     SizedBox(
                       height: media.width * 0.1,
                     ),

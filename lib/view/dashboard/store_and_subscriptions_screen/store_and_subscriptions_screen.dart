@@ -775,7 +775,7 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardBackgroundColor,
         borderRadius: BorderRadius.circular(15),
@@ -848,7 +848,7 @@ class ProductCard extends StatelessWidget {
                 children: [
                   Text(
                     product.name,
-                    maxLines: 5,
+                    maxLines: 4, // ✅ تم التعديل إلى 4 أسطر لاستيعاب النص الأطول
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         color: AppColors.whiteColor,
@@ -858,7 +858,7 @@ class ProductCard extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     product.category,
-                    maxLines: 5,
+                    maxLines: 1, // تم الإبقاء على سطر واحد للتصنيف
                     overflow: TextOverflow.ellipsis,
                     
                     style: const TextStyle(color: AppColors.darkGrayColor, fontSize: 10),
@@ -918,6 +918,16 @@ class ProductCard extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
 
 // =========================================================================
 // 7. واجهة إضافة اشتراك (Modal) - تم إضافة isAdmin

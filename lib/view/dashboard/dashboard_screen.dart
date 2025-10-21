@@ -1,10 +1,11 @@
 import 'dart:io';
 
 import 'package:fitnessapp/const/utils/app_colors.dart';
+import 'package:fitnessapp/view/dashboard/activity/library.dart';
 import 'package:fitnessapp/view/dashboard/camera/camera_screen.dart';
 import 'package:fitnessapp/view/dashboard/Room/GymRoomsScreen.dart' hide AppColors; // تم دمج hide AppColors (لا حاجة لـ hide إذا كان الاستخدام في هذا الملف لا يتعارض)
 import 'package:fitnessapp/view/dashboard/store_and_subscriptions_screen/store_and_subscriptions_screen.dart' hide AppColors; // تم دمج hide AppColors
-import 'package:fitnessapp/view/dashboard/profile/user_profile.dart' hide AppColors; // تم دمج hide AppColors 
+import 'package:fitnessapp/view/dashboard/profile/Profile.dart' hide AppColors; // تم دمج hide AppColors 
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart'; 
 
@@ -54,7 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       const GymRoomsScreen(),          // Index 0: غرف الجيم
       const StoreAndSubscriptionsScreen(), // 🟢 تم التعديل
       CameraScreen(cameras: widget.cameras), // Index 2: الكاميرا
-      const ActivityScreen(),           // Index 3: النشاط
+      const FitnessApp(),           // Index 3: النشاط
       const UserProfile(),              // Index 4: البروفايل
     ];
 

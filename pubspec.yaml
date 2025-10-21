@@ -39,6 +39,7 @@ dependencies:
   intl: ^0.17.0
 
   http: ^1.5.0
+  dio: ^5.9.0
 
   camera: ^0.11.2
   path_provider: ^2.1.5
@@ -62,8 +63,15 @@ dependencies:
 
   uuid: ^4.5.1
 
+  html_unescape: ^2.0.0 # 👈 أضف هذا السطر
 
+  video_player: ^2.10.0
 
+  pdf: ^3.11.3  
+
+  printing: ^5.14.2
+
+  rename_app: ^1.6.5
 
 
 dev_dependencies:
