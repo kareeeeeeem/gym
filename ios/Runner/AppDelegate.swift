@@ -1,5 +1,6 @@
-import Flutter
 import UIKit
+import Flutter
+import FBSDKCoreKit // تم إضافة هذا الاستيراد: لإصلاح خطأ 'Cannot find ApplicationDelegate'
 import flutter_facebook_auth // [1] استيراد المكتبة الخاصة بالفيسبوك
 
 @main
@@ -8,7 +9,15 @@ import flutter_facebook_auth // [1] استيراد المكتبة الخاصة �
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    
+    // [3] تهيئة Facebook SDK (مهم لكي يعمل تسجيل الدخول)
+    ApplicationDelegate.shared.application(
+        application,
+        didFinishLaunchingWithOptions: launchOptions
+    )
+    
     GeneratedPluginRegistrant.register(with: self)
+    // استدعاء تطبيق الـ super class
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -18,13 +27,13 @@ import flutter_facebook_auth // [1] استيراد المكتبة الخاصة �
         open url: URL,
         options: [UIApplication.OpenURLOptionsKey : Any] = [:]
     ) -> Bool {
-        // نطلب من flutter_facebook_auth التعامل مع رابط العودة
-        ApplicationDelegate.shared.application(
+        // نطلب من FBSDKCoreKit التعامل مع رابط العودة
+        let facebookHandled = ApplicationDelegate.shared.application(
             application,
             open: url,
             options: options
         )
-        // يجب أن نضمن استدعاء الدالة الأساسية (super) أيضًا
-        return super.application(application, open: url, options: options)
+        // نرجع true إذا قام فيسبوك بالتعامل مع الرابط أو إذا قامت الدالة الأساسية بالتعامل معه
+        return facebookHandled || super.application(application, open: url, options: options)
     }
 }
