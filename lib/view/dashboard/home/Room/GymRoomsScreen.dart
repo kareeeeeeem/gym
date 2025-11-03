@@ -1,7 +1,9 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:fitnessapp/view/dashboard/Room/RoomDetailsScreen.dart';
+import 'package:fitnessapp/view/dashboard/home/CoachesPage/CoachesPage.dart';
+import 'package:fitnessapp/view/dashboard/home/Room/RoomDetailsScreen.dart';
 import 'package:fitnessapp/view/dashboard/home/notification/notification_screen.dart';
+import 'package:fitnessapp/view/dashboard/home/qr/QrFromSheetPage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -443,7 +445,7 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
     return Scaffold(
       backgroundColor: AppColors.blackColor, // Dark background for the screen
       appBar: AppBar(
-        title: const Text('Ego Gym Social Rooms', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.whiteColor)),
+        title: const Text('Rooms', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.whiteColor)),
         backgroundColor: AppColors.blackColor,
         elevation: 0.5,
         iconTheme: const IconThemeData(color: AppColors.whiteColor),
@@ -465,7 +467,56 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
               );
             },
           ),
-          const SizedBox(width: 8), // مسافة بسيطة من الحافة
+                    const SizedBox(width: 2), // مسافة بسيطة من الحافة
+
+          IconButton(
+            icon: const Icon(
+             Icons.people_alt, // أيقونة إشعارات جميلة
+              color: Colors.red, // يمكنك استخدام اللون الذهبي لتمييزها
+              size: 28,
+            ),
+            onPressed: () {
+              // مسار الانتقال (Path Page)
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CoachesPage()),
+              );
+            },
+          ),
+          const SizedBox(width: 2), // مسافة بسيطة من الحافة
+
+
+
+IconButton(
+    icon: const Icon(
+        Icons.qr_code, 
+        color: Colors.white,
+        size: 28,
+    ),
+    onPressed: () {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null && user.email != null) {
+            // ✅ تمرير البريد الإلكتروني الفعلي هنا
+            final String currentUserId = user.email!.toLowerCase(); 
+            
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => QrFromSheetPage(userId: currentUserId),
+                ),
+            );
+        } else {
+            // إذا لم يكن هناك مستخدم مسجل الدخول
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Please log in first.')),
+            );
+        }
+    },
+),
+                   
+          
+           const SizedBox(width: 8), // مسافة بسيطة من الحافة
+
         ],
       ),
       body: Column(
@@ -543,7 +594,7 @@ Future<void> _deleteRoomIfAllowed(GymRoom room) async {
                       if (filteredRooms.isEmpty) {
                         return const Center(
                           child: Text(
-                            'No rooms currently available.\nBe the first to create one! \nor one for you and friends',
+                            'No rooms currently available.\nBe the first to create room! \nor room for you and friends',
 
                               textAlign: TextAlign.center, style: TextStyle(color: AppColors.darkGrayColor)),
                         );

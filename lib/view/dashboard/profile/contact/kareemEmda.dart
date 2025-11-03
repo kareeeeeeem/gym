@@ -501,12 +501,6 @@ class _HowUsViewState extends State<HowUsView> with SingleTickerProviderStateMix
 
                           const SizedBox(height: 40),
                           
-                          // زر الـ CTA (للتواصل عبر الإيميل)
-                          // RoundButton(
-                          //   title: "Hire for Mobile/Web Development",
-                          //   type: RoundButtonType.secondaryBG,
-                          //   onPressed: () => _launchURL("mailto:${profile.email}", context),
-                          // ),
                           const SizedBox(height: 30),
                         ],
                       ),

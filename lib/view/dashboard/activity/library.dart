@@ -1,13 +1,108 @@
 import 'package:fitnessapp/view/dashboard/activity/WorkoutLogPage.dart';
-import 'package:fitnessapp/view/dashboard/activity/activity_screen.dart';
+import 'package:fitnessapp/view/dashboard/activity/note.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; 
+// ===================================================
+// 1. UPDATED DATA MODELS (Exercise & Set Log)
+// ===================================================
 
-// ===================================================
-// 1. DATA MODEL (Exercise Model)
-// ===================================================
+// **تم نسخ نماذج SimpleSetLog و SimpleLogEntry من الكود السابق وتم تعديلها**
+class SimpleSetLog {
+  final TextEditingController repsController; 
+  final TextEditingController weightController; 
+
+  SimpleSetLog({String reps = '', String weight = ''}) 
+      : repsController = TextEditingController(text: reps),
+        weightController = TextEditingController(text: weight);
+
+  Map<String, dynamic> toJson() => {
+    'reps': repsController.text,
+    'weight': weightController.text,
+  };
+
+  factory SimpleSetLog.fromJson(Map<String, dynamic> json) {
+    return SimpleSetLog(
+      reps: json['reps'] as String? ?? '',
+      weight: json['weight'] as String? ?? '',
+    );
+  }
+  
+  void dispose() {
+    repsController.dispose();
+    weightController.dispose();
+  }
+}
+
+// **تم دمج بيانات Exercise الأساسية مع بيانات SimpleLogEntry**
+class ExerciseLogEntry {
+  final int id;
+  final String name;
+  final String muscleGroup; 
+  final String description; 
+  final String gifUrl;
+  final List<SimpleSetLog> sets; // التفاصيل الجديدة للمجاميع والعدات والأوزان
+  
+  ExerciseLogEntry({
+    required this.id,
+    required this.name,
+    required this.muscleGroup,
+    required this.description,
+    required this.gifUrl,
+    List<SimpleSetLog>? initialSets,
+  }) : sets = initialSets ?? [SimpleSetLog()]; // ضمان وجود Set واحد على الأقل
+
+  // دالة تحويل الكائن إلى خريطة (Map) لحفظه
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'muscleGroup': muscleGroup,
+    'description': description,
+    'gifUrl': gifUrl,
+    'sets': sets.map((setLog) => setLog.toJson()).toList(), // حفظ تفاصيل المجموعات
+  };
+
+  // دالة مصنع (Factory) لإنشاء الكائن من بيانات JSON
+  factory ExerciseLogEntry.fromJson(Map<String, dynamic> json) {
+    List<SimpleSetLog> sets = (json['sets'] as List<dynamic>?)
+        ?.map((setJson) => SimpleSetLog.fromJson(setJson as Map<String, dynamic>))
+        .toList() ?? [SimpleSetLog()];
+        
+    if (sets.isEmpty) {
+      sets.add(SimpleSetLog());
+    }
+
+    return ExerciseLogEntry(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      muscleGroup: json['muscleGroup'] as String,
+      description: json['description'] as String,
+      gifUrl: json['gifUrl'] as String,
+      initialSets: sets,
+    );
+  }
+  
+  // دالة للتخلص من controllers داخل الكائن
+  void dispose() {
+    for (var setLog in sets) {
+      setLog.dispose();
+    }
+  }
+  
+  // دالة مساعدة لتحويل Exercise بسيط إلى ExerciseLogEntry
+  static ExerciseLogEntry fromSimpleExercise(Exercise exercise) {
+    return ExerciseLogEntry(
+      id: exercise.id,
+      name: exercise.name,
+      muscleGroup: exercise.muscleGroup,
+      description: exercise.description,
+      gifUrl: exercise.gifUrl,
+      initialSets: [SimpleSetLog()], // بدء بتفاصيل فارغة
+    );
+  }
+}
 
 class Exercise {
   final int id;
@@ -26,7 +121,7 @@ class Exercise {
 }
 
 // ===================================================
-// 2. API SERVICE (WgerApiService)
+// 2. API SERVICE (WgerApiService) - NO CHANGES
 // ===================================================
 
 class WgerApiService {
@@ -135,26 +230,30 @@ class WgerApiService {
 }
 
 // ===================================================
-// 3. WORKOUT SERVICE (ChangeNotifier)
+// 3. WORKOUT SERVICE (ChangeNotifier) - UPDATED
 // ===================================================
 
 class WorkoutService extends ChangeNotifier {
   static const String _workoutsKey = 'savedWorkouts';
   
-  final List<Exercise> _currentWorkout = [];
+  // **تم تغيير النوع إلى ExerciseLogEntry**
+  final List<ExerciseLogEntry> _currentWorkout = [];
   
-  List<Exercise> get currentWorkout => _currentWorkout;
+  List<ExerciseLogEntry> get currentWorkout => _currentWorkout;
   
   // ADD EXERCISE TO CURRENT WORKOUT
+  // **تم تعديل الدالة لتقبل Exercise بسيط وتحويله**
   void addExerciseToCurrentWorkout(Exercise exercise) {
     if (!_currentWorkout.any((e) => e.id == exercise.id)) {
-      _currentWorkout.add(exercise);
+      _currentWorkout.add(ExerciseLogEntry.fromSimpleExercise(exercise));
       notifyListeners(); 
     } 
   }
   
   // REMOVE EXERCISE FROM CURRENT WORKOUT
-  void removeExerciseFromCurrentWorkout(Exercise exercise) {
+  // **تم تعديل الدالة لاستخدام ExerciseLogEntry**
+  void removeExerciseFromCurrentWorkout(ExerciseLogEntry exercise) {
+    exercise.dispose(); // التخلص من controllers قبل الحذف
     _currentWorkout.removeWhere((e) => e.id == exercise.id);
     notifyListeners(); 
   }
@@ -162,6 +261,14 @@ class WorkoutService extends ChangeNotifier {
   // SAVE CURRENT WORKOUT AS PERMANENT ROUTINE
   Future<void> saveCurrentWorkout(String name) async {
     if (_currentWorkout.isEmpty) return;
+    
+    // **التخلص من controllers التي لم تعد مستخدمة بعد الحفظ**
+    final List<Map<String, dynamic>> exercisesToSave = _currentWorkout.map((e) {
+      final json = e.toJson();
+      e.dispose(); 
+      return json;
+    }).toList();
+
 
     final prefs = await SharedPreferences.getInstance();
     final String currentWorkoutsJson = prefs.getString(_workoutsKey) ?? '[]';
@@ -173,13 +280,7 @@ class WorkoutService extends ChangeNotifier {
 
     final workoutData = {
       'name': name,
-      'exercises': _currentWorkout.map((e) => {
-        'id': e.id,
-        'name': e.name,
-        'muscleGroup': e.muscleGroup,
-        'description': e.description,
-        'gifUrl': e.gifUrl,
-      }).toList(),
+      'exercises': exercisesToSave, // قائمة التمارين المحولة مع تفاصيل السجل
       'date': DateTime.now().toIso8601String().substring(0, 10), 
     };
     
@@ -191,7 +292,7 @@ class WorkoutService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // LOAD ALL SAVED WORKOUTS
+  // LOAD ALL SAVED WORKOUTS - NO CHANGES
   Future<List<Map<String, dynamic>>> loadSavedWorkouts() async {
     final prefs = await SharedPreferences.getInstance();
     final String currentWorkoutsJson = prefs.getString(_workoutsKey) ?? '[]';
@@ -201,7 +302,7 @@ class WorkoutService extends ChangeNotifier {
         .toList();
   }
   
-  // DELETE SAVED WORKOUT
+  // DELETE SAVED WORKOUT - NO CHANGES
   Future<void> deleteSavedWorkout(String date, String name) async {
     final prefs = await SharedPreferences.getInstance();
     final String currentWorkoutsJson = prefs.getString(_workoutsKey) ?? '[]';
@@ -217,7 +318,7 @@ class WorkoutService extends ChangeNotifier {
     notifyListeners();
   }
   
-  // 💡 إضافة دالة إعادة التسمية هنا
+  // RENAME SAVED WORKOUT - NO CHANGES
   Future<void> renameSavedWorkout(String oldDate, String oldName, String newName) async {
     if (newName.trim().isEmpty || oldName == newName) return;
 
@@ -229,11 +330,9 @@ class WorkoutService extends ChangeNotifier {
         .map((e) => e as Map<String, dynamic>)
         .toList();
 
-    // البحث عن الروتين المراد تعديله
     int index = savedWorkouts.indexWhere((w) => w['date'] == oldDate && w['name'] == oldName);
     
     if (index != -1) {
-      // تحديث الاسم
       savedWorkouts[index]['name'] = newName;
     }
     
@@ -245,54 +344,176 @@ class WorkoutService extends ChangeNotifier {
 final WorkoutService workoutService = WorkoutService();
 
 // ===================================================
-// 4. HELPER WIDGETS AND SCREENS
+// 4. HELPER WIDGETS AND SCREENS - UPDATED
 // ===================================================
 
-// WORKOUT LIST ITEM FOR CURRENT WORKOUT SCREEN
-class WorkoutListItem extends StatelessWidget {
-  final Exercise exercise;
-  const WorkoutListItem({super.key, required this.exercise});
+// **تم تعديل الـ Widget لاستقبال ExerciseLogEntry وإضافة منطق الأوزان/العدات**
+class WorkoutListItem extends StatefulWidget {
+  final ExerciseLogEntry exerciseLog;
+  const WorkoutListItem({super.key, required this.exerciseLog});
+
+  @override
+  State<WorkoutListItem> createState() => _WorkoutListItemState();
+}
+
+class _WorkoutListItemState extends State<WorkoutListItem> {
+
+  // إضافة دالة مساعدة لإنشاء حقل النص
+  Widget _buildLogTextField({
+    required TextEditingController controller,
+    required bool isInteger,
+  }) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(6))),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(6)),
+          borderSide: BorderSide(color: Colors.blueGrey.shade400, width: 1.5),
+        ),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      ),
+      keyboardType: isInteger 
+          ? TextInputType.number 
+          : const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: isInteger 
+          ? [FilteringTextInputFormatter.digitsOnly] 
+          : [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+      // أهم نقطة: إعادة بناء الواجهة عند تغيير النص لإجبار ListenableBuilder على التحديث
+      onChanged: (_) {
+         workoutService.notifyListeners(); 
+      },
+    );
+  }
+  
+  // Row UI for one Set
+  Widget _buildSetRow(SimpleSetLog setLog, int setIndex) {
+    final entry = widget.exerciseLog;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 20,
+            alignment: Alignment.center,
+            child: Text('${setIndex + 1}', style: const TextStyle(fontWeight: FontWeight.w500)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: _buildLogTextField(controller: setLog.repsController, isInteger: true)),
+          const SizedBox(width: 8),
+          Expanded(child: _buildLogTextField(controller: setLog.weightController, isInteger: false)),
+          
+          if (entry.sets.length > 1)
+            IconButton(
+              icon: const Icon(Icons.remove_circle, color: Colors.redAccent, size: 20),
+              constraints: const BoxConstraints(),
+              padding: EdgeInsets.zero,
+              onPressed: () {
+                setState(() {
+                  setLog.dispose();
+                  entry.sets.removeAt(setIndex);
+                  workoutService.notifyListeners(); // إخطار الخدمة بالتغيير
+                });
+              },
+            ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final exerciseLog = widget.exerciseLog;
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      elevation: 1,
-      child: ListTile(
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
-          child: Image.network(
-            exercise.gifUrl, 
-            width: 60, height: 60, 
-            fit: BoxFit.cover,
-            errorBuilder: (c, e, s) => const Icon(Icons.fitness_center, size: 40, color: Colors.grey),
-          ),
-        ),
-        title: Text(
-          exercise.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        // ⚠️ تم التعطيل: إخفاء اسم مجموعة العضلات/الوصف
-        // subtitle: Text(exercise.muscleGroup),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_forever, color: Colors.red),
-          onPressed: () {
-            workoutService.removeExerciseFromCurrentWorkout(exercise);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${exercise.name} removed from current routine.')),
-            );
-          },
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Header (Name, Image, Delete Button)
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: Image.network(
+                    exerciseLog.gifUrl, 
+                    width: 50, height: 50, 
+                    fit: BoxFit.cover,
+                    errorBuilder: (c, e, s) => const Icon(Icons.fitness_center, size: 40, color: Colors.grey),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    exerciseLog.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_forever, color: Colors.red),
+                  onPressed: () {
+                    workoutService.removeExerciseFromCurrentWorkout(exerciseLog);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${exerciseLog.name} removed from current routine.')),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const Divider(height: 15, thickness: 1),
+
+            // 2. Table Headers (Reps & Weight)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 5),
+              child: Row(
+                children: [
+                  Container(width: 20, alignment: Alignment.center, child: const Text('#', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const SizedBox(width: 8),
+                  const Expanded(child: Text('Reps', style: TextStyle(fontWeight: FontWeight.bold))),
+                  const SizedBox(width: 8),
+                  const Expanded(child: Text('Weight (kg)', style: TextStyle(fontWeight: FontWeight.bold))),
+                ],
+              ),
+            ),
+            
+            // 3. Sets Log Rows
+            ...exerciseLog.sets.asMap().entries.map((setEntry) {
+              final setLog = setEntry.value;
+              final setIndex = setEntry.key;
+              return _buildSetRow(setLog, setIndex);
+            }).toList(),
+            
+            const SizedBox(height: 10),
+            
+            // 4. Add Set Line Button
+            Center(
+              child: TextButton.icon(
+                icon: const Icon(Icons.add_circle, color: Colors.blue),
+                label: const Text('Add Set', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  setState(() {
+                    exerciseLog.sets.add(SimpleSetLog());
+                    workoutService.notifyListeners(); // إخطار الخدمة بالتغيير
+                  });
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// SAVE WORKOUT SECTION
+
+// SAVE WORKOUT SECTION - NO CHANGES (Name Controller updated earlier)
 class _SaveWorkoutSection extends StatelessWidget {
   final TextEditingController _nameController = TextEditingController(
-    // 💡 تعديل الاسم الافتراضي
-    text: 'تمرين اليوم ${DateTime.now().month}/${DateTime.now().day}' 
+    text: 'Today Exrercise ${DateTime.now().month}/${DateTime.now().day}' 
   );
 
   _SaveWorkoutSection({super.key});
@@ -312,13 +533,11 @@ class _SaveWorkoutSection extends StatelessWidget {
       SnackBar(content: Text('Routine "$name" saved successfully!')),
     );
     
-    // الرجوع إلى شاشة المكتبة بعد الحفظ
     Navigator.of(context).popUntil((route) => route.isFirst); 
   }
   
   @override
   Widget build(BuildContext context) {
-    // 💡 تم تعديل البادينغ السفلي إلى 0.0 لرفع القسم
     return Padding(
       padding: const EdgeInsets.only(
         top: 8.0, 
@@ -335,7 +554,6 @@ class _SaveWorkoutSection extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // 💡 حقل التسمية مفعل
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(
@@ -346,15 +564,19 @@ class _SaveWorkoutSection extends StatelessWidget {
             ),
             const SizedBox(height: 15),
             
-            ElevatedButton(
-              onPressed: () => _saveWorkout(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              child: const Text(
-                'Save as Permanent Routine',
-                style: TextStyle(fontSize: 18, color: Colors.white),
+            Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+              child: ElevatedButton(
+                onPressed: () => _saveWorkout(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                child: const Text(
+                  'Save Routine',
+                  style: TextStyle(fontSize: 18, color: Colors.white),
+                ),
+                
               ),
             ),
           ],
@@ -365,7 +587,7 @@ class _SaveWorkoutSection extends StatelessWidget {
 }
 
 // ===================================================
-// 5. CURRENT WORKOUT SCREEN (TEMPORARY)
+// 5. CURRENT WORKOUT SCREEN (TEMPORARY) - NO CHANGES TO STRUCTURE
 // ===================================================
 
 class CurrentWorkoutScreen extends StatelessWidget {
@@ -379,17 +601,15 @@ class CurrentWorkoutScreen extends StatelessWidget {
         title: const Text('Current Daily Routine 🏋️'),
         centerTitle: true,
         actions: [
-          // 💡 إضافة زر بـ Padding مخصص لتضييق المسافة
           Padding(
-            padding: const EdgeInsets.only(right: 4.0), // تضييق المسافة إلى 4.0 بدلاً من الافتراضية (حوالي 12-16)
+            padding: const EdgeInsets.only(right: 4.0),
             child: IconButton(
-              icon: const Icon(Icons.search), // أيقونة البحث كمثال
+              icon: const Icon(Icons.search),
               onPressed: () {
                  // إضافة وظيفة البحث هنا
               },
-              // 💡 إلغاء الـ padding الافتراضي لـ IconButton
               padding: EdgeInsets.zero, 
-              constraints: const BoxConstraints(), // لضمان عدم وجود قيود إضافية على الحجم
+              constraints: const BoxConstraints(),
             ),
           ),
         ],
@@ -397,7 +617,7 @@ class CurrentWorkoutScreen extends StatelessWidget {
       body: ListenableBuilder(
         listenable: workoutService,
         builder: (context, child) {
-          final exercises = workoutService.currentWorkout;
+          final exercises = workoutService.currentWorkout; // exercises now are ExerciseLogEntry
           return Column(
             children: [
               Expanded(
@@ -412,8 +632,8 @@ class CurrentWorkoutScreen extends StatelessWidget {
                     : ListView.builder(
                         itemCount: exercises.length,
                         itemBuilder: (context, index) {
-                          final exercise = exercises[index];
-                          return WorkoutListItem(exercise: exercise);
+                          final exerciseLog = exercises[index];
+                          return WorkoutListItem(exerciseLog: exerciseLog); // تم تغيير اسم البراميتر
                         },
                       ),
               ),
@@ -428,7 +648,7 @@ class CurrentWorkoutScreen extends StatelessWidget {
 }
 
 // ===================================================
-// 6. SAVED WORKOUTS SCREEN (PERMANENT) - NEW!
+// 6. SAVED WORKOUTS SCREEN (PERMANENT) - UPDATED
 // ===================================================
 
 class SavedWorkoutsScreen extends StatefulWidget {
@@ -445,7 +665,6 @@ class _SavedWorkoutsScreenState extends State<SavedWorkoutsScreen> {
   void initState() {
     super.initState();
     _loadWorkouts();
-    // Listen for changes when a workout is saved or deleted
     workoutService.addListener(_loadWorkouts);
   }
 
@@ -482,7 +701,6 @@ class _SavedWorkoutsScreenState extends State<SavedWorkoutsScreen> {
     );
   }
 
-  // 💡 دالة لفتح نافذة إعادة التسمية
   void _renameWorkout(BuildContext context, Map<String, dynamic> workout) {
     final TextEditingController nameController = TextEditingController(text: workout['name']);
     final String oldDate = workout['date'];
@@ -519,6 +737,7 @@ class _SavedWorkoutsScreenState extends State<SavedWorkoutsScreen> {
     );
   }
 
+  // **تم تعديل هذا الجزء لعرض تفاصيل المجاميع والعدات والأوزان المحفوظة**
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -545,7 +764,7 @@ class _SavedWorkoutsScreenState extends State<SavedWorkoutsScreen> {
             );
           }
 
-          final savedRoutines = snapshot.data!.reversed.toList(); // Newest first
+          final savedRoutines = snapshot.data!.reversed.toList();
           
           return ListView.builder(
             padding: const EdgeInsets.all(10.0),
@@ -553,9 +772,7 @@ class _SavedWorkoutsScreenState extends State<SavedWorkoutsScreen> {
             itemBuilder: (context, index) {
               final workout = savedRoutines[index];
               final date = workout['date'] as String;
-              final exercises = (workout['exercises'] as List).map((e) => Exercise(
-                id: e['id'], name: e['name'], muscleGroup: e['muscleGroup'], description: e['description'], gifUrl: e['gifUrl']
-              )).toList();
+              final List<dynamic> exercisesData = workout['exercises'] as List;
 
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -563,11 +780,10 @@ class _SavedWorkoutsScreenState extends State<SavedWorkoutsScreen> {
                 child: ExpansionTile(
                   leading: const Icon(Icons.calendar_today, color: Colors.blue),
                   title: Text(workout['name'] ?? 'Untitled Routine', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Date: $date | ${exercises.length} Exercises'),
+                  subtitle: Text('Date: $date | ${exercisesData.length} Exercises'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 💡 زر التعديل/إعادة التسمية الجديد
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.blue),
                         onPressed: () => _renameWorkout(context, workout),
@@ -578,12 +794,37 @@ class _SavedWorkoutsScreenState extends State<SavedWorkoutsScreen> {
                       ),
                     ],
                   ),
-                  children: exercises.map((e) => ListTile(
-                    contentPadding: const EdgeInsets.only(left: 30, right: 15),
-                    title: Text(e.name),
-                    subtitle: Text(e.muscleGroup),
-                    leading: Image.network(e.gifUrl, width: 40, height: 40, fit: BoxFit.cover, errorBuilder: (c, ee, s) => const Icon(Icons.fitness_center)),
-                  )).toList(),
+                  children: exercisesData.map((e) {
+                      // استخراج تفاصيل المجاميع
+                      final List<dynamic> sets = e['sets'] as List? ?? [];
+                      final String setsSummary = sets.map((s) {
+                        return '(${s['reps'] ?? '-'}x) ${s['weight'] ?? '-'}kg';
+                      }).join(' | ');
+
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 30, right: 15, bottom: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(e['name'] ?? 'Exercise Name', style: const TextStyle(fontWeight: FontWeight.w600)),
+                              subtitle: Text(e['muscleGroup'] ?? 'General'),
+                              leading: Image.network(e['gifUrl'] ?? '', width: 40, height: 40, fit: BoxFit.cover, errorBuilder: (c, ee, s) => const Icon(Icons.fitness_center)),
+                            ),
+                            if (sets.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 55.0, bottom: 8),
+                                child: Text(
+                                  setsSummary,
+                                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                                ),
+                              ),
+                            const Divider(height: 1, indent: 55),
+                          ],
+                        ),
+                      );
+                  }).toList(),
                 ),
               );
             },
@@ -596,7 +837,7 @@ class _SavedWorkoutsScreenState extends State<SavedWorkoutsScreen> {
 
 
 // ---------------------------------------------------
-// 7. EXERCISE LIBRARY PAGE - Menu Icon to Saved Workouts
+// 7. EXERCISE LIBRARY PAGE - NO CHANGES
 // ---------------------------------------------------
 
 class ExerciseLibraryPage extends StatefulWidget {
@@ -660,7 +901,7 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
         imageMap: _imageMap, muscleFilterName: _selectedMuscle,
       );
 
-      if (newExercises.isEmpty && !isInitial) { setState(() { _isFetchingMore = false; }); return; }
+      if (newExercises.isEmpty && !isInitial) { setState(() { _isFetchingMore = false; return; }); }
 
       setState(() {
         _allExercises.addAll(newExercises);
@@ -725,7 +966,7 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
     return Scaffold(
       appBar: AppBar(
   leading: IconButton(
-    icon: const Icon(Icons.menu), // الأيقونة على الشمال
+    icon: const Icon(Icons.menu),
     onPressed: () {
       Navigator.push(
         context,
@@ -735,11 +976,27 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
       );
     },
   ),
+  
   title: const Text('Exercise Library'),
   centerTitle: true,
   actions: [
+
+
     IconButton(
-      icon: const Icon(Icons.fitness_center), // الأيقونة على اليمين
+      icon: const Icon(Icons.sports_gymnastics),
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CurrentWorkoutScreen(),
+          ),
+        );
+      },
+    ),
+
+
+    IconButton(
+      icon: const Icon(Icons.fitness_center),
       onPressed: () {
         Navigator.push(
           context,
@@ -748,6 +1005,18 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
           ),
         );
       },
+    ),
+
+    IconButton(
+    icon: const Icon(Icons.note_add_outlined),
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SimpleWorkoutNotepad(),
+        ),
+      );
+    },
     ),
   ],
 ),
@@ -784,7 +1053,7 @@ class _ExerciseLibraryPageState extends State<ExerciseLibraryPage> {
 }
 
 // ---------------------------------------------------
-// 8. EXERCISE DETAILS PAGE - Auto Pop implemented
+// 8. EXERCISE DETAILS PAGE - NO CHANGES
 // ---------------------------------------------------
 
 class ExerciseGridItem extends StatelessWidget {
@@ -818,19 +1087,15 @@ class ExerciseGridItem extends StatelessWidget {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold, 
                       fontSize: 15,
-                      // لم يتم تعديل اللون هنا بناءً على طلبك الأخير
-                      // ولكن يمكنك استخدام: color: Colors.blue, 
                     ), 
                     maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.start
                   ),
                   const SizedBox(height: 2),
-                  // ⚠️ تم الإبقاء على عرض مجموعة العضلات هنا
                   Text(
                     exercise.muscleGroup, 
                     style: TextStyle(
                       color: Colors.grey[600], 
                       fontSize: 16
-                      // يمكنك استخدام: color: Colors.purple,
                     ), 
                     textAlign: TextAlign.start
                   ),
@@ -853,7 +1118,6 @@ class ExerciseDetailPage extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${exercise.name} added to current routine.')),
     );
-    // **وظيفة الرجوع التلقائي**
     Navigator.pop(context); 
   }
 
@@ -894,11 +1158,17 @@ class ExerciseDetailPage extends StatelessWidget {
                         style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 50), side: const BorderSide(color: Colors.grey), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
                       ),
                       const Divider(height: 40),
-                      // ⚠️ تم التعطيل: إخفاء عنوان الإرشادات
-                      // const Text('Instructions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      // const SizedBox(height: 10),
-                      // ⚠️ تم التعطيل: إخفاء نص الوصف
-                      // Text(exercise.description, style: const TextStyle(fontSize: 16, height: 1.5), textAlign: TextAlign.start),
+                      // **إظهار اسم التمرين**
+                      Text(exercise.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const SizedBox(height: 10),
+                      // **إظهار اسم العضلة**
+                      Text(exercise.muscleGroup, style: const TextStyle(fontSize: 16, color: Colors.blue)),
+                      const SizedBox(height: 20),
+                      // **إظهار عنوان الإرشادات**
+                      const Text('Instructions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      // **إظهار نص الوصف**
+                      Text(exercise.description, style: const TextStyle(fontSize: 16, height: 1.5), textAlign: TextAlign.start),
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -915,13 +1185,10 @@ class ExerciseDetailPage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(icon: const Icon(Icons.arrow_back_ios, color: Colors.black), onPressed: () => Navigator.pop(context)),
-                  // ⚠️ تم التعطيل: إخفاء اسم التمرين في شريط التنقل
+                  // **إظهار اسم التمرين في شريط التنقل**
                   // Text(exercise.name, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
                   Row(children: const [ 
-                    // ⚠️ تم التعطيل: إخفاء زر About
-                    // TextButton(onPressed: () {}, child: const Text('About', style: TextStyle(color: Colors.black))), 
-                    // ⚠️ تم التعطيل: إخفاء زر Progress
-                    // TextButton(onPressed: () {}, child: const Text('Progress', style: TextStyle(color: Colors.black))) 
+                    // **تم حذف هذه الأزرار بناءً على الكود السابق**
                   ]),
                 ],
               ),
@@ -934,7 +1201,7 @@ class ExerciseDetailPage extends StatelessWidget {
 }
 
 // ---------------------------------------------------
-// 9. APP START POINT
+// 9. APP START POINT - NO CHANGES
 // ---------------------------------------------------
 
 class FitnessApp extends StatelessWidget {

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; 
 import 'dart:async'; 
+import 'package:url_launcher/url_launcher.dart'; // 💡 يجب إضافة هذا
 
 // =========================================================================
 // 0. Widgets Definitions (RoundButton) - ADDED FOR COMPLETENESS
@@ -646,22 +648,23 @@ class SubscriptionCard extends StatelessWidget {
                     )).toList(),
 
                 const SizedBox(height: 20),
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // منطق الشراء
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                      minimumSize: const Size(double.infinity, 50),
-                    ),
-                    child: const Text("اشترك الآن", style: TextStyle(color: AppColors.whiteColor, fontSize: 16, fontWeight: FontWeight.bold)),
-                  ),
-                ),
+                
+                // Center(
+                //   child: ElevatedButton(
+                //     onPressed: () {
+                //       // منطق الشراء
+                //     },
+                //     style: ElevatedButton.styleFrom(
+                //       backgroundColor: AppColors.primaryColor1,
+                //       shape: RoundedRectangleBorder(
+                //         borderRadius: BorderRadius.circular(25),
+                //       ),
+                //       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                //       minimumSize: const Size(double.infinity, 50),
+                //     ),
+                //     child: const Text("اشترك الآن", style: TextStyle(color: AppColors.whiteColor, fontSize: 16, fontWeight: FontWeight.bold)),
+                //   ),
+                // ),
               ],
             ),
           ),
@@ -670,6 +673,28 @@ class SubscriptionCard extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // =========================================================================
@@ -769,9 +794,99 @@ class ProductsTab extends StatelessWidget {
   }
 }
 
+
+
+
 class ProductCard extends StatelessWidget {
   final ProductModel product;
   const ProductCard({Key? key, required this.product}) : super(key: key);
+
+
+  // 💡 تم التعديل: زيادة تفاصيل الخطأ وإضافة تأخير بسيط لضمان تهيئة Firebase
+  Future<String> _fetchReceptionNumber() async {
+    const String defaultNumber = '201004632660'; 
+
+    // ✅ نقطة التحقق الإضافية: التأكد من أن Firebase قد تم تهيئته (عادة ما يكون قد تم ذلك قبل عرض الشاشة، لكن للتأكد)
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('default_number')
+          .doc('general')
+          .get();
+      
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        if (data.containsKey('reception_phone') && data['reception_phone'] is String) {
+           final fetchedNumber = (data['reception_phone'] as String).trim();
+           debugPrint('✅ Firebase fetched number successfully: $fetchedNumber');
+           return fetchedNumber; 
+        } else {
+           debugPrint('⚠️ Firestore document exists but field reception_phone is missing or not a String.');
+           return defaultNumber;
+        }
+      } else {
+        debugPrint('⚠️ Firestore document default_number/general does not exist.');
+        return defaultNumber; 
+      }
+    } catch (e) {
+      // إذا حدث خطأ في الاتصال، نرجع رقماً احتياطياً
+      debugPrint('❌ Firebase Error fetching phone: $e');
+      return defaultNumber; 
+    }
+  }
+  
+
+  // منطق حجز المنتج وفتح الواتساب (تم التعديل لاستخدام Firebase)
+  void _handleBooking(BuildContext context) async {
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Book With Reception Chat'),
+        backgroundColor: AppColors.accentColor,
+      ),
+    );
+
+    // 💡 الخطوة 1: جلب الرقم ديناميكياً من Firebase
+    final String receptionNumber = await _fetchReceptionNumber();
+
+    // 1. بناء رسالة الواتساب
+     String message = 
+    "Hello, I would like to book the following product:\n\n*Product:* ${product.name}\n\n*Price:* ${product.price.toStringAsFixed(2)} EG";    
+    
+    // إضافة السعر المخصوم إذا كان موجوداً
+    if (product.hasDiscount) {
+      message +="\n*Discounted Price:* ${product.discountedPrice.toStringAsFixed(2)} EG";
+    }
+    
+    // 2. تشفير الرسالة لكي تكون صالحة في الرابط
+    final encodedMessage = Uri.encodeComponent(message);
+    
+    // 3. بناء رابط واتساب باستخدام الرقم الذي تم جلبه من Firebase
+    // 🚨 ملاحظة: يجب أن يحتوي الرقم على كود الدولة (مثل +20 أو 20)
+    final Uri whatsappUrl = Uri.parse(
+        'whatsapp://send?phone=$receptionNumber&text=$encodedMessage'); 
+
+    // 4. محاولة فتح الرابط
+    try {
+      if (await canLaunchUrl(whatsappUrl)) {
+        await launchUrl(whatsappUrl);
+      } else {
+        // إذا كان تطبيق واتساب غير متوفر، نحاول الفتح عبر المتصفح 
+        final Uri webUrl = Uri.parse(
+            'https://wa.me/$receptionNumber?text=$encodedMessage'); 
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      // إظهار رسالة خطأ واضحة
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+content: Text('Failed to open WhatsApp. Make sure it is installed and the number is: $receptionNumber'),          backgroundColor: AppColors.redColor,
+        ),
+      );
+    }
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -795,6 +910,7 @@ class ProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ... (باقي كود الصورة والتفاصيل العليا) ...
             Stack(
               children: [
                 ClipRRect(
@@ -833,13 +949,14 @@ class ProductCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
-                        "عرض",
+                        "offer",
                         style: TextStyle(color: AppColors.blackColor, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
               ],
             ),
+            // ... (نهاية كود الصورة والتفاصيل العليا) ...
 
             Padding(
               padding: const EdgeInsets.all(10),
@@ -848,7 +965,7 @@ class ProductCard extends StatelessWidget {
                 children: [
                   Text(
                     product.name,
-                    maxLines: 4, // ✅ تم التعديل إلى 4 أسطر لاستيعاب النص الأطول
+                    maxLines: 4, 
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         color: AppColors.whiteColor,
@@ -858,13 +975,14 @@ class ProductCard extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     product.category,
-                    maxLines: 1, // تم الإبقاء على سطر واحد للتصنيف
+                    maxLines: 1, 
                     overflow: TextOverflow.ellipsis,
                     
                     style: const TextStyle(color: AppColors.darkGrayColor, fontSize: 10),
                   ),
                   const SizedBox(height: 8),
                   
+                  // الزر المُعدَّل لفتح الواتساب
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -893,18 +1011,29 @@ class ProductCard extends StatelessWidget {
                         ],
                       ),
                       
-                      Container(
-                        width: 35,
-                        height: 35,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryColor1,
-                          borderRadius: BorderRadius.circular(10),
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 5),
+                          child: ElevatedButton.icon(
+                            onPressed: () => _handleBooking(context), // استدعاء دالة فتح الواتساب
+
+                        icon: const Icon(
+                          FontAwesomeIcons.whatsapp, 
+                          color: AppColors.whiteColor, 
+                          size: 16
                         ),
-                        child: InkWell(
-                          onTap: () {
-                            // منطق الإضافة للسلة
-                          },
-                          child: const Icon(Icons.add_shopping_cart, color: AppColors.whiteColor, size: 20),
+                        label: const Text(
+                          "book",
+                          style: TextStyle(color: AppColors.whiteColor, fontSize: 12, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.greenColor, 
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                          elevation: 0,
+                            ),
+                           ), 
                         ),
                       ),
                     ],
@@ -918,8 +1047,6 @@ class ProductCard extends StatelessWidget {
     );
   }
 }
-
-
 
 
 

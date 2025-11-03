@@ -14,7 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // 🧩 شاشات وتنسيقات المشروع
 import 'package:fitnessapp/routes.dart';
-import 'package:fitnessapp/view/dashboard/dashboard_screen.dart';
+import 'package:fitnessapp/view/dashboard/home/dashboard_screen.dart';
 import 'package:fitnessapp/view/dashboard/camera/camera_screen.dart';
 import 'package:fitnessapp/view/welcome/on_boarding/start_screen.dart';
 

@@ -1,5 +1,5 @@
 import 'package:fitnessapp/aus/signup/signup_screen.dart';
-import 'package:fitnessapp/view/dashboard/dashboard_screen.dart';
+import 'package:fitnessapp/view/dashboard/home/dashboard_screen.dart';
 import 'package:fitnessapp/view/welcome/on_boarding/widgets/pager_widget.dart';
 import 'package:flutter/material.dart';
 

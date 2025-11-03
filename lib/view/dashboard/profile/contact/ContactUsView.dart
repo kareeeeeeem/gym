@@ -1,15 +1,11 @@
-// ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-// 💡 استيراد Firestore
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // =========================================================================
 // 0. تعريفات افتراضية (AppColors و RoundButton)
 // =========================================================================
-
-// تعريف افتراضي للألوان
 class AppColors {
   static const Color whiteColor = Color(0xFFFFFFFF);
   static const Color blackColor = Color(0xFF1D1617);
@@ -53,7 +49,6 @@ class RoundButton extends StatelessWidget {
     );
   }
 }
-
 
 // =========================================================================
 // 1. ContactUsView - شاشة التواصل الديناميكية

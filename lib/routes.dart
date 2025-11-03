@@ -1,6 +1,7 @@
 import 'package:fitnessapp/view/dashboard/activity/WorkoutLogPage.dart';
-import 'package:fitnessapp/view/dashboard/Room/GymRoomsScreen.dart';
+import 'package:fitnessapp/view/dashboard/home/Room/GymRoomsScreen.dart';
 import 'package:fitnessapp/view/dashboard/activity/activity_screen.dart';
+import 'package:fitnessapp/view/dashboard/home/CoachesPage/CoachesPage.dart';
 import 'package:fitnessapp/view/dashboard/home/notification/notification_screen.dart';
 import 'package:fitnessapp/aus/login/login_screen.dart';
 import 'package:fitnessapp/view/welcome/on_boarding/on_boarding_screen.dart';
@@ -24,7 +25,7 @@ final Map<String, WidgetBuilder> routes = {
   NotificationsPage.routeName: (context) => const NotificationsPage(),
   ActivityScreen.routeName: (context) => const ActivityScreen(),
     DashboardScreen.routeName: (context) => const DashboardScreen(),
-
+CoachesPage.routeName: (context) => const CoachesPage(), // ✅ يجب أن يكون هذا مُضافاً
 
 
 

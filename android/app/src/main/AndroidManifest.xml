@@ -29,7 +29,7 @@
     <!-- ========================================================= -->
     <application
         android:name="${applicationName}"
-        android:label="EGO"
+        android:label="Ego"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         tools:targetApi="33">
@@ -116,6 +116,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <!-- 💡 تأكد من أن هذا الـ Scheme يطابق FB App ID -->
                 <data android:scheme="@string/fb_login_protocol_scheme" />
             </intent-filter>
         </activity>

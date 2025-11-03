@@ -81,7 +81,7 @@ Widget _buildPermissionDeniedWidget(Size media) {
                 const Icon(Icons.camera_alt_outlined, size: 60, color: AppColors.primaryColor1),
                 const SizedBox(height: 20),
                 const Text(
-                    "يتطلب هذا التطبيق إذن الوصول إلى الكاميرا.",
+                    "Please restart the app",
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
@@ -112,7 +112,7 @@ Widget _buildPermissionDeniedWidget(Size media) {
                         ),
                         alignment: Alignment.center,
                         child: Text(
-                            _isPermissionRequesting ? "جارٍ الطلب..." : "طلب الإذن/فتح الإعدادات",
+                            _isPermissionRequesting ? "Please restart the app..." : "Request permission/open settings",
                             style: const TextStyle(
                                 color: AppColors.whiteColor,
                                 fontSize: 16,
@@ -130,36 +130,43 @@ Widget _buildPermissionDeniedWidget(Size media) {
   // 1. منطق التبديل بين الكاميرات (الأمامية/الخلفية)
   // =========================================================================
   void _onSwitchCamera() async {
-    if (_isPickingOrCapturing || _isPermissionRequesting || widget.cameras.length <= 1) return;
+  if (_isPickingOrCapturing || _isPermissionRequesting || widget.cameras.length <= 1) return;
 
-    // 1. تحديد الفهرس الجديد
+  setState(() {
+    _isCameraReady = false;
+  });
+
+  try {
+    // 1️⃣ أوقف الكنترولر الحالي وانتظر التخلص منه
+    await _controller.dispose();
+
+    // 2️⃣ تحديد الكاميرا الجديدة
     final currentCameraIndex = widget.cameras.indexOf(_selectedCamera);
     final newCameraIndex = (currentCameraIndex + 1) % widget.cameras.length;
-    
-    // 2. تحديث الكاميرا المختارة
     _selectedCamera = widget.cameras[newCameraIndex];
 
-    // 3. تهيئة الكنترولر بالكاميرا الجديدة
+    // 3️⃣ إنشاء الكنترولر الجديد
     _controller = CameraController(
-        _selectedCamera, 
-        ResolutionPreset.high, // حل مشكلة الوضوح
+      _selectedCamera,
+      ResolutionPreset.high,
+      enableAudio: false, // تحسين الأداء
     );
 
-    // 4. إعادة التهيئة وعرض الكاميرا
+    // 4️⃣ تهيئة الكاميرا وانتظارها فعليًا
+    await _controller.initialize();
+
+    if (!mounted) return;
+
     setState(() {
-        _isCameraReady = false; 
-        _initializeControllerFuture = _controller.initialize().then((_) {
-            if (!mounted) return;
-            setState(() {
-                _isCameraReady = true;
-            });
-        }).catchError((e) {
-             print("Camera Switch Error: $e");
-             setState(() { _isCameraReady = false; });
-        });
+      _isCameraReady = true;
+    });
+  } catch (e) {
+    print("Camera Switch Error: $e");
+    setState(() {
+      _isCameraReady = false;
     });
   }
-
+}
 
   // =========================================================================
   // 2. طلب الإذن وتهيئة الكاميرا (تم تنقيحها)
@@ -219,13 +226,20 @@ Widget _buildPermissionDeniedWidget(Size media) {
 
       // 2. قراءة الملف كبايت وفك التشفير
       final bytes = await imageFile.readAsBytes();
-      img.Image? originalImage = img.decodeImage(bytes);
+img.Image? originalImage = img.decodeImage(bytes);
+
+if (originalImage == null) throw Exception("Failer.");
+
+// ✅ لو الكاميرا أمامية، اقلب الصورة أفقيًا
+if (_selectedCamera.lensDirection == CameraLensDirection.front) {
+  originalImage = img.flipHorizontal(originalImage);
+}
 
       if (originalImage == null) throw Exception("فشل في فك تشفير الصورة.");
 
       // 3. إضافة العلامة المائية
       const String watermarkText = "Ego Gym";
-      final int fontSize = (originalImage.height / 18).round().clamp(40, 120);
+      final int fontSize = (originalImage.height / 18).round().clamp(80, 120);
       const double charWidthFactor = 0.6;
       final int estimatedTextWidth = (fontSize * watermarkText.length * charWidthFactor).round();
       final int textX = originalImage.width - estimatedTextWidth - 40; // هامش 40
@@ -259,17 +273,17 @@ Widget _buildPermissionDeniedWidget(Size media) {
         setState(() {
           _lastCapturedImagePath = newImageFile.path;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ تم التقاط وحفظ الصورة بنجاح.")),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(content: Text("✅ تم التقاط وحفظ الصورة بنجاح.")),
+        // );
       } else {
-        throw Exception("فشل حفظ الصورة في المعرض.");
+        throw Exception("failed.");
       }
     } catch (e) {
       print("Capture Error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ فشل التقاط/معالجة الصورة: ${e.toString()}")),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text("❌ فشل التقاط/معالجة الصورة: ${e.toString()}")),
+      // );
     } finally {
       if (mounted) {
         setState(() { _isPickingOrCapturing = false; }); // فتح الأزرار
@@ -282,9 +296,9 @@ Widget _buildPermissionDeniedWidget(Size media) {
   // =========================================================================
   void _showLastCapturedImage() {
       if (_lastCapturedImagePath == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("لم يتم التقاط أي صورة بعد لعرضها.")),
-          );
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //     const SnackBar(content: Text("لم يتم التقاط أي صورة بعد لعرضها.")),
+          // );
           return;
       }
       
@@ -293,7 +307,7 @@ Widget _buildPermissionDeniedWidget(Size media) {
           context: context,
           builder: (context) => AlertDialog(
               backgroundColor: AppColors.blackColor,
-              title: const Text("آخر صورة ملتقطة", style: TextStyle(color: AppColors.whiteColor)),
+              title: const Text("last picture", style: TextStyle(color: AppColors.whiteColor)),
               content: Image.file(
                   File(_lastCapturedImagePath!),
                   fit: BoxFit.contain,
@@ -302,7 +316,7 @@ Widget _buildPermissionDeniedWidget(Size media) {
               actions: [
                   TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text("إغلاق", style: TextStyle(color: AppColors.primaryColor1)),
+                      child: const Text("close", style: TextStyle(color: AppColors.primaryColor1)),
                   ),
               ],
           ),
@@ -325,15 +339,15 @@ Widget _buildPermissionDeniedWidget(Size media) {
       
       if (image != null) {
           // 💡 هنا يمكنك إضافة منطق معالجة لصورة المعرض (مثل إضافة العلامة المائية إذا لزم الأمر)
-          ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text("✅ تم اختيار صورة من المعرض: ${image.name}")),
-          );
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //    SnackBar(content: Text("✅ تم اختيار صورة من المعرض: ${image.name}")),
+          // );
       }
     } catch (e) {
       print("Gallery Error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ فشل فتح المعرض: ${e.toString()}")),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(content: Text("❌ فشل فتح المعرض: ${e.toString()}")),
+      // );
     } finally {
       setState(() { _isPickingOrCapturing = false; }); 
     }
@@ -364,7 +378,7 @@ Widget _buildPermissionDeniedWidget(Size media) {
             body: Center(
                 child: Padding(
                     padding: EdgeInsets.all(30.0),
-                    child: Text("لا توجد كاميرات متاحة. يرجى إعادة تشغيل التطبيق.",
+                    child: Text("Please restart the application..",
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 18, color: AppColors.primaryColor1))
                 )
@@ -401,22 +415,21 @@ Widget _buildPermissionDeniedWidget(Size media) {
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.done && _isCameraReady) {
                 // 💡 [ملاحظة] - استخدام BoxFit.cover لملء الشاشة مع الحفاظ على الأبعاد.
-                return SizedBox(
-                  width: media.width,
-                  height: media.height,
-                  child: FittedBox(
-                    fit: BoxFit.cover,
-                    child: SizedBox(
-                      width: media.width,
-                      height: media.width / _controller.value.aspectRatio,
-                      child: CameraPreview(_controller),
-                    ),
-                  ),
-                );
+                return SizedBox.expand(
+  child: FittedBox(
+    fit: BoxFit.cover, // 💡 يخلي الكاميرا تملى الشاشة كلها زي سناب شات
+    child: SizedBox(
+      width: _controller.value.previewSize?.height ?? 0,
+      height: _controller.value.previewSize?.width ?? 0,
+      child: CameraPreview(_controller),
+    ),
+  ),
+);
+
               } else if (snapshot.hasError) {
                   return Center(
                       child: Text(
-                          "خطأ: الكاميرا غير متاحة (${snapshot.error})",
+                          "Error: Camera is not available (${snapshot.error})",
                           style: const TextStyle(color: Colors.red),
                       ),
                   );
@@ -442,7 +455,7 @@ Widget _buildPermissionDeniedWidget(Size media) {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 30),
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 64.0),
+                padding: const EdgeInsets.only(bottom:  65.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -472,7 +485,7 @@ Widget _buildPermissionDeniedWidget(Size media) {
                       onTap: _takePhotoAndSave,
                       child: Container(
                         width: 75,
-                        height: 75,
+                        height: 100,
                         decoration: BoxDecoration(
                             gradient: LinearGradient(colors: AppColors.primaryG),
                             borderRadius: BorderRadius.circular(37.5),
@@ -484,7 +497,7 @@ Widget _buildPermissionDeniedWidget(Size media) {
                         alignment: Alignment.center,
                         child: const Icon(
                           Icons.camera_alt,
-                          size: 35,
+                          size: 55,
                           color: AppColors.whiteColor,
                         ),
                       ),

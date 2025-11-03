@@ -255,7 +255,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         };
         
         await FirebaseFirestore.instance.collection('memberships').add(docData);
-        _showSnackbar('✅ Membership saved successfully', AppColors.accentColor);
+        _showSnackbar('Membership saved successfully✅', const Color.fromARGB(255, 0, 204, 0));
         return true;
 
     } on FirebaseException catch (e) {

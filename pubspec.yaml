@@ -31,10 +31,21 @@ dependencies:
   firebase_auth: ^6.1.1
   cloud_functions: ^6.0.3
   firebase_storage: ^13.0.3
+  sign_in_with_apple: ^7.0.1
 
   flutter_facebook_auth: ^7.1.2 
 
   google_sign_in: ^7.2.0
+
+
+
+  firebase_auth_web: ^6.0.4
+  firebase_core_web: ^3.2.0
+  desktop_webview_auth: ^0.0.16
+  firebase_messaging_web: ^4.0.3
+  firebase_analytics_web: ^0.6.0+3
+  firebase_storage_web: ^3.10.21
+
 
   intl: ^0.17.0
 
@@ -73,6 +84,9 @@ dependencies:
 
   rename_app: ^1.6.5
 
+  font_awesome_flutter: ^10.12.0
+
+  intl_phone_field: ^3.2.0
 
 dev_dependencies:
   flutter_test:

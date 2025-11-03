@@ -414,7 +414,7 @@ class _WorkoutLogPageState extends State<WorkoutLogPage> {
                         Icon(Icons.add_circle_outline, color: Colors.white, size: 30),
                         SizedBox(width: 15),
                         Text(
-                          'custom Workout ',
+                          'Custom Workout ',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
@@ -680,7 +680,7 @@ class _CreateRoutineScreenState extends State<CreateRoutineScreen> {
         top: 8.0, 
         left: 16.0, 
         right: 16.0, 
-        bottom: 64.0,
+        bottom: 100.0,
       ),
               child: ElevatedButton(
                 onPressed: _isSaving ? null : _saveRoutine,
