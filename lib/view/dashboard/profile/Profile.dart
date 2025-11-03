@@ -866,7 +866,7 @@ void _logout() async {
       );
       
       // يمكنك إزالة الـ SnackBar هنا إذا أردت، لأن التنقل سيغطي الشاشة
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Logged out successfully!")));
+     // ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Logged out successfully!")));
     }
     
   } catch (e) {

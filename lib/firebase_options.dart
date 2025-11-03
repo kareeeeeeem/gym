@@ -46,15 +46,17 @@ class DefaultFirebaseOptions {
     messagingSenderId: '586180299581',
     projectId: 'egogym-aad03',
     authDomain: 'egogym-aad03.firebaseapp.com',
+    databaseURL: 'https://egogym-aad03-default-rtdb.firebaseio.com',
     storageBucket: 'egogym-aad03.firebasestorage.app',
     measurementId: 'G-NPR50CMPL5',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAp5t-LGjpPeCL-_LlO-1YUd9ce_faKXKk',
-    appId: '1:586180299581:android:12e2698112f7d6d53dd354',
+    appId: '1:586180299581:android:443ea65067c3b0563dd354',
     messagingSenderId: '586180299581',
     projectId: 'egogym-aad03',
+    databaseURL: 'https://egogym-aad03-default-rtdb.firebaseio.com',
     storageBucket: 'egogym-aad03.firebasestorage.app',
   );
 
@@ -63,7 +65,10 @@ class DefaultFirebaseOptions {
     appId: '1:586180299581:ios:d1f730a2319ae62b3dd354',
     messagingSenderId: '586180299581',
     projectId: 'egogym-aad03',
+    databaseURL: 'https://egogym-aad03-default-rtdb.firebaseio.com',
     storageBucket: 'egogym-aad03.firebasestorage.app',
+    androidClientId: '586180299581-8626kb9a8hktaafqsj85k07nrjmegi0t.apps.googleusercontent.com',
+    iosClientId: '586180299581-ne5slo2ta4jsc4htl5dk2d577316vs5c.apps.googleusercontent.com',
     iosBundleId: 'com.example.ego',
   );
 
@@ -72,7 +77,10 @@ class DefaultFirebaseOptions {
     appId: '1:586180299581:ios:d1f730a2319ae62b3dd354',
     messagingSenderId: '586180299581',
     projectId: 'egogym-aad03',
+    databaseURL: 'https://egogym-aad03-default-rtdb.firebaseio.com',
     storageBucket: 'egogym-aad03.firebasestorage.app',
+    androidClientId: '586180299581-8626kb9a8hktaafqsj85k07nrjmegi0t.apps.googleusercontent.com',
+    iosClientId: '586180299581-ne5slo2ta4jsc4htl5dk2d577316vs5c.apps.googleusercontent.com',
     iosBundleId: 'com.example.ego',
   );
 
@@ -82,6 +90,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '586180299581',
     projectId: 'egogym-aad03',
     authDomain: 'egogym-aad03.firebaseapp.com',
+    databaseURL: 'https://egogym-aad03-default-rtdb.firebaseio.com',
     storageBucket: 'egogym-aad03.firebasestorage.app',
     measurementId: 'G-4J991TH7CX',
   );

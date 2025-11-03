@@ -1,31 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="ego">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
   <title>ego</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  
-  <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore-compat.js"></script>
-  
-  <script>
-    // ⚠️ الخطوة 2: تهيئة مشروعك (استخدم مفاتيحك التي أرسلتها سابقاً)
-    var firebaseConfig = {
-      apiKey: "AIzaSyCXs4pDFbUk6uxY8aNyDnkK3JNzWKLs", // المفترض
-      authDomain: "egogym-aa003.firebaseapp.com",
-      projectId: "egogym-aa003",
-      storageBucket: "egogym-aa003.appspot.com",
-      messagingSenderId: "588180299581",
-      appId: "1:588180299581:web:924bc3bde69d3c8f85d654",
-      measurementId: "G-NPRB5CMPLS"
-    };
-
-    // تفعيل Firebase
-    firebase.initializeApp(firebaseConfig);
-  </script>
-  
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

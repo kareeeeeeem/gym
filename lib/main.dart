@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 import 'dart:convert';
 
+import 'package:fitnessapp/firebase_options.dart';
 import 'package:fitnessapp/view/dashboard/home/notification/notification_screen.dart';
 import 'package:fitnessapp/const/complete_profile_screen.dart' hide DashboardScreen;
 import 'package:fitnessapp/view/dashboard/profile/Profile.dart';
@@ -8,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart' show kIsWeb; // ✅ استيراد kIsWeb
+
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,17 +29,25 @@ final notificationsNotifier = ValueNotifier<List<Map<String, dynamic>>>([]);
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔥 Firebase
-  await Firebase.initializeApp();
+  // 🔥 Firebase: استخدام الإعدادات المولّدة لكل منصة
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // ⏱️ إعدادات اللغة
   await initializeDateFormatting('ar', null);
 
-  // 🎥 الكاميرا
-  final cameras = await availableCameras();
+  // 🎥 الكاميرا: ✅ تصحيح مشكلة نوع البيانات (Argument Type)
+  final List<CameraDescription> cameras = kIsWeb ? 
+    [] // القائمة الفارغة يجب أن تحدد نوعها صراحة
+    : await availableCameras();
 
-  // 🔔 تهيئة OneSignal
-  await _initializeOneSignal();
+  // 🔔 تهيئة OneSignal: ✅ توقف OneSignal فقط عند التشغيل على الويب
+  if (!kIsWeb) {
+    await _initializeOneSignal();
+  } else {
+    print("🔔 OneSignal initialization skipped on Web platform.");
+  }
 
   // 🚀 شغّل التطبيق
   runApp(MyRootApp(cameras: cameras));
@@ -44,10 +55,7 @@ Future<void> main() async {
 
 // ===========================================================================
 // 🔔 OneSignal
-// ===========================================================================// main.dart (التعديلات في دالة _initializeOneSignal)
-// main.dart (التعديل النهائي في دالة _initializeOneSignal)
-// main.dart (التعديل النهائي والكامل في دالة _initializeOneSignal)
-
+// ... (بقية كود _initializeOneSignal)
 Future<void> _initializeOneSignal() async {
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
   OneSignal.initialize(OneSignalAppId);
@@ -116,7 +124,7 @@ Future<void> _initializeOneSignal() async {
 }
 // ===========================================================================
 // 🏁 Root App
-// ===========================================================================
+// ... (بقية الكود)
 class MyRootApp extends StatelessWidget {
   final List<CameraDescription> cameras;
 
@@ -146,12 +154,6 @@ class MyRootApp extends StatelessWidget {
             ? DashboardScreen(cameras: cameras)
             : const StartScreen();
 
-
-       // final initialScreen = const UserProfile();
-
-
-
-
         return MyApp(
           initialScreen: initialScreen,
           cameras: cameras,
@@ -163,7 +165,7 @@ class MyRootApp extends StatelessWidget {
 
 // ===========================================================================
 // 🎨 App
-// ===========================================================================
+// ... (بقية الكود)
 class MyApp extends StatelessWidget {
   final Widget initialScreen;
   final List<CameraDescription> cameras;

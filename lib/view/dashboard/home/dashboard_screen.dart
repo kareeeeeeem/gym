@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart'; 
 
 import 'package:fitnessapp/view/dashboard/activity/activity_screen.dart'; 
-
+import 'package:flutter/foundation.dart' show kIsWeb; // ✅ جديد: لاستخدام kIsWeb
 // =========================================================================
 // تم إزالة تعريف AppColors.
 // يتم الآن استدعاء AppColors من:
@@ -68,7 +68,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     // تم تعريف التدرج اللوني لثيم Ego Gym (الذهبي والمحمر) مباشرة هنا:
     final List<Color> gymGradient = [const Color(0xFFFFA500), const Color(0xFF8B0000)]; // ذهبي وماروني
-    
+    double bottomPadding = 25;
+    double navbarHeight = 65;
+
+// إذا لم يكن وب، يمكننا استخدام Platform لتعديل القيم
+if (!kIsWeb) {
+  // هنا يمكنك استخدام Platform بشكل آمن
+  if (Platform.isIOS) {
+    bottomPadding = 35; // مسافة iOS
+    navbarHeight = 75; // ارتفاع iOS
+  }
+}
     return Scaffold(
       // *** التعديل لحل مشكلة اللون الأبيض ***
       // السماح لـ body بالتمدد خلف شريط التنقل السفلي
@@ -87,17 +97,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // =========================================================================
       bottomNavigationBar: Padding(
         // إعطاء مسافة بادئة من الأسفل والجوانب لجعل الشريط "عائماً"
-        padding: EdgeInsets.only(
-          bottom: Platform.isIOS ? 35 : 25, // مسافة كبيرة من الأسفل
-          left: 20, 
-          right: 20,
-        ),
+       padding: EdgeInsets.only(
+      bottom: bottomPadding, // استخدام المتغير
+      left: 20, 
+      right: 20,
+    ),
         child: ClipRRect(
           // تدوير الحواف بالكامل
           borderRadius: BorderRadius.circular(30),
           child: Container(
             // ارتفاع مريح
-            height: Platform.isIOS ? 75 : 65, 
+            height: navbarHeight, 
             // خلفية داكنة (شبه شفافة)
             color: AppColors.blackColor.withOpacity(0.85), 
             child: Row(
