@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart'; // Still needed for the type definition
 import 'package:intl/intl.dart';
-import 'dart:io'; // 🟢 1. إضافة مكتبة File
-import 'package:firebase_storage/firebase_storage.dart'; // 🟢 2. إضافة مكتبة Firebase Storage
+import 'dart:io'; 
+import 'package:firebase_storage/firebase_storage.dart'; 
 
 // ⚠️ تأكد أن مسار الاستيراد هذا صحيح
 import 'GymRoomsScreen.dart'; 
@@ -12,18 +12,20 @@ import 'GymRoomsScreen.dart';
 
 
 // =========================================================================
-// 0. تعريف الألوان (Ego Gym Theme)
+// 0. تعريف الألوان (Ego Gym Theme - Modified for WhatsApp Style)
 // =========================================================================
 class AppColors {
   static const Color whiteColor = Color(0xFFFFFFFF);
   static const Color blackColor = Color(0xFF1D1617); // Dark Background
   static const Color darkGrayColor = Color(0xFFC0C0C0); // Lighter Gray for text on dark bg
-  static const Color primaryColor1 = Color(0xFF8B0000); // Dark Maroon/Deep Red
+  static const Color primaryColor1 = Color(0xFF8B0000); // Dark Maroon/Deep Red (Original)
+  static const Color whatsappGreen = Color(0xFFDCF8C6); // Light green/calm for 'isMe' messages
   static const Color accentColor = Color(0xFFFFA500); // Electric Gold/Amber
-  static const Color accentGradientStart = Color(0xFFFFCC00); // Lighter Gold
-  static const Color accentGradientEnd = Color(0xFF8B0000); // Maroon/Deep Red
-  static const Color cardBackgroundColor = Color(0xFF222222); // Dark background for cards
+  static const Color accentGradientStart = Color(0xFFFFCC00); 
+  static const Color accentGradientEnd = Color(0xFF8B0000); 
+  static const Color cardBackgroundColor = Color(0xFF222222); // Dark background for cards (Other person's bubble)
   static const Color replyColor = Color(0xFF4B0082); // Indigo/Dark Violet for Reply Indicator
+  static const Color darkTextColor = Color(0xFF1D1617); // Text color for light bubbles
 }
 
 // =========================================================================
@@ -45,7 +47,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   final _messageController = TextEditingController(); 
   
   String get currentUserId => _auth.currentUser?.uid ?? '';
-  String get currentUserName => _auth.currentUser?.displayName ?? 'مستخدم غير معروف';
+  String get currentUserName => _auth.currentUser?.displayName ?? 'Unknown User';
   bool get isCreator => widget.room.creatorId == currentUserId;
   bool get isParticipant => widget.room.participantUids.contains(currentUserId);
 
@@ -57,12 +59,14 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    Intl.defaultLocale = 'ar'; 
+    // 💡 تغيير الإعدادات المحلية إلى الإنجليزية
+    Intl.defaultLocale = 'en_US'; 
     
-    // 🔥 تهيئة مراجع Firestore
+    // 🔥 تهيئة مراجع Firestore (مع افتراض default-app-id)
+    const appId = 'default-app-id'; // Use __app_id in a real environment
     roomRef = _firestore
         .collection('artifacts')
-        .doc('default-app-id')
+        .doc(appId)
         .collection('public')
         .doc('data')
         .collection('room')
@@ -80,8 +84,6 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   void _setReplyTo(Map<String, dynamic>? message) {
     setState(() {
       _replyToMessage = message;
-      // تركيز حقل الإدخال بعد تحديد الرد
-      FocusScope.of(context).requestFocus(FocusNode()); 
     });
   }
 
@@ -91,9 +93,9 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   
   void _closeRoom() async {
     final confirmed = await _showConfirmationDialog(
-      'تأكيد الإغلاق', 
-      'هل أنت متأكد من رغبتك في إغلاق هذه الغرفة وإنهاء الجلسة؟ سيتم إخفاؤها من القائمة الرئيسية.', 
-      'إغلاق',
+      'Confirm Closure', 
+      'Are you sure you want to close this room and end the session? It will be hidden from the main list.', 
+      'Close',
       isDestructive: true,
     );
     
@@ -102,41 +104,45 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
         await roomRef.update({'isClosed': true});
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم إغلاق الغرفة بنجاح. سيتم توجيهك الآن.')),
+            const SnackBar(content: Text('Room closed successfully. You will be redirected now.')),
           );
           Navigator.pop(context); 
         }
       } catch (e) {
-        _showAlertDialog('خطأ في الإغلاق', 'فشل في إغلاق الغرفة.');
+        _showAlertDialog('Closure Error', 'Failed to close the room.');
       }
     }
   }
 
   void _leaveRoom() async {
     final confirmed = await _showConfirmationDialog(
-      'تأكيد المغادرة', 
-      'هل أنت متأكد من مغادرة الغرفة؟ لن تتمكن من رؤية المحادثة بعد المغادرة.', 
-      'مغادرة',
+      'Confirm Leave', 
+      'Are you sure you want to leave the room? You will not be able to see the conversation afterward.', 
+      'Leave',
       isDestructive: true
     );
     
     if (confirmed) {
       try {
+        // تحديث قائمة المشاركين (participants) وقائمة UIDs
         await roomRef.update({
+          // إزالة كائن المشارك من مصفوفة participants
           'participants': FieldValue.arrayRemove([
+             // البحث عن المشارك الحالي في القائمة
              widget.room.participants.firstWhere((p) => p['uid'] == currentUserId, orElse: () => null)
           ].where((item) => item != null).toList()),
+          // إزالة UID من مصفوفة participantUids
           'participantUids': FieldValue.arrayRemove([currentUserId]),
         });
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم مغادرة الغرفة بنجاح.')),
+            const SnackBar(content: Text('Successfully left the room.')),
           );
           Navigator.pop(context);
         }
       } catch (e) {
-        _showAlertDialog('خطأ في المغادرة', 'فشل في مغادرة الغرفة. يرجى المحاولة لاحقاً.');
+        _showAlertDialog('Leaving Error', 'Failed to leave the room. Please try again later.');
       }
     }
   }
@@ -152,71 +158,115 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   }
 
   // =========================================================================
-  // 3. منطق إرسال الرسالة واختيار الصورة (مُفعّل بالكامل)
+  // 3. منطق إرسال الرسالة واختيار الملف (Hash out: تم وضع تعليق على رفع الملفات)
   // =========================================================================
   
-  void _pickImageFromGallery() async {
+  // ⛔ تم وضع تعليق على الدالة: _showMediaPickerDialog
+  /*
+  void _showMediaPickerDialog() {
+      if (!isParticipant) {
+          _showAlertDialog('Not Allowed', 'You must be a participant in the room to send messages.');
+          return;
+      }
+
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: AppColors.cardBackgroundColor,
+        builder: (context) {
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.photo, color: AppColors.accentColor),
+                  title: const Text('Image from Gallery', style: TextStyle(color: AppColors.whiteColor)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _uploadFile(isVideo: false);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.videocam, color: AppColors.primaryColor1),
+                  title: const Text('Video from Gallery', style: TextStyle(color: AppColors.whiteColor)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _uploadFile(isVideo: true);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+  }
+  */
+
+  // ⛔ تم وضع تعليق على الدالة: _uploadFile
+  /*
+  void _uploadFile({required bool isVideo}) async {
     
-    // 🛑 التحقق من المشاركة قبل الإرسال
-    if (!isParticipant) {
-        _showAlertDialog('غير مسموح', 'يجب أن تكون مشاركاً في الغرفة لتتمكن من إرسال الرسائل.');
-        return;
-    }
+    if (!isParticipant) return;
     
-    print('Gallery button pressed! Attempting to open image picker...');
+    print('Media upload started. Is Video: $isVideo');
     
     try {
       final picker = ImagePicker(); 
-      final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80); 
+      final XFile? pickedFile = isVideo
+          ? await picker.pickVideo(source: ImageSource.gallery)
+          : await picker.pickImage(source: ImageSource.gallery, imageQuality: 80); 
       
       if (pickedFile != null) {
         
-        _showStatusSnackBar('جاري رفع الصورة...', isError: false);
+        final fileType = isVideo ? 'Video' : 'Image';
+        _showStatusSnackBar('Uploading $fileType...', isError: false);
         
-        // 1. إنشاء مرجع للتخزين (Storage Reference)
+        final storagePath = isVideo ? 'chat_videos' : 'chat_images';
+        final mimeType = isVideo ? 'video/mp4' : 'image/jpeg';
+
         final storageRef = FirebaseStorage.instance
             .ref()
-            .child('chat_images')
+            .child(storagePath)
             .child(widget.room.id)
-            .child('${DateTime.now().millisecondsSinceEpoch}_$currentUserId.jpg');
+            .child('${DateTime.now().millisecondsSinceEpoch}_$currentUserId.${isVideo ? 'mp4' : 'jpg'}');
 
-        // 2. رفع الملف
-        final uploadTask = storageRef.putFile(File(pickedFile.path));
+        final uploadTask = storageRef.putFile(File(pickedFile.path), SettableMetadata(contentType: mimeType));
         final snapshot = await uploadTask.whenComplete(() {});
         
-        // 3. الحصول على رابط التنزيل
-        final imageUrl = await snapshot.ref.getDownloadURL();
+        final fileUrl = await snapshot.ref.getDownloadURL();
         
-        // 4. إرسال الرسالة إلى Firestore
         await messagesRef.add({
-          'text': '', // نترك النص فارغاً أو نضع نصاً افتراضياً
+          'text': _messageController.text.trim(), 
           'senderId': currentUserId,
           'senderName': currentUserName,
           'timestamp': FieldValue.serverTimestamp(),
           'reactions': [],
-          'type': 'image', // 💡 تحديد نوع الرسالة كصورة
-          'imageUrl': imageUrl, // 💡 إضافة رابط الصورة
+          'type': isVideo ? 'video' : 'image', 
+          'fileUrl': fileUrl, 
         });
+
+        _messageController.clear(); 
         
-        _showStatusSnackBar('تم إرسال الصورة بنجاح!', isError: false);
-        print('Image successfully uploaded and message sent.');
+        _showStatusSnackBar('$fileType sent successfully!', isError: false);
+        print('$fileType successfully uploaded and message sent.');
 
       } else {
-        _showStatusSnackBar('تم إلغاء اختيار الصورة.', isError: false);
-        print('Image selection cancelled.');
+        _showStatusSnackBar('File selection cancelled.', isError: false);
+        print('Media selection cancelled.');
       }
       
     } catch (e) {
-      _showStatusSnackBar('حدث خطأ أثناء رفع الصورة أو إرسالها. يرجى مراجعة الصلاحيات.', isError: true); 
-      print('Image processing/upload error: $e'); 
+      _showStatusSnackBar('An error occurred during file upload. Check permissions.', isError: true); 
+      print('Media processing/upload error: $e'); 
     }
   }
+  */
 
 
   void _sendMessage() async {
     // 🛑 التحقق من المشاركة قبل الإرسال
     if (!isParticipant) {
-        _showAlertDialog('غير مسموح', 'يجب أن تكون مشاركاً في الغرفة لتتمكن من إرسال الرسائل.');
+        _showAlertDialog('Not Allowed', 'You must be a participant in the room to send messages.');
         return;
     }
     
@@ -235,7 +285,8 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     if (_replyToMessage != null) {
       messageData['replyTo'] = {
         'originalSenderName': _replyToMessage!['senderName'],
-        'originalText': _replyToMessage!['text'],
+        // بما أن الرفع معطل، سنركز على النصوص فقط في الردود
+        'originalText': _replyToMessage!['text'] ?? 'Attached message', 
       };
     }
 
@@ -302,7 +353,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
               Icon(Icons.lock, size: 60, color: AppColors.primaryColor1),
               SizedBox(height: 20),
               Text(
-                'يجب الانضمام للغرفة لرؤية المحادثة وإرسال الرسائل.',
+                'You must join the room to view the conversation and send messages.',
                 style: TextStyle(fontSize: 16, color: AppColors.darkGrayColor),
               ),
             ],
@@ -344,7 +395,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
             child: _buildChatMessagesList(),
           ),
           
-          // 🟢 صندوق الرد
+          // 🟢 صندوق الرد (واجهة محسّنة)
           if (_replyToMessage != null) 
             _buildReplyToBox(),
 
@@ -362,12 +413,12 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
           return const Center(child: CircularProgressIndicator(color: AppColors.accentColor));
         }
         if (snapshot.hasError) {
-          return Center(child: Text('خطأ في تحميل الرسائل: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+          return Center(child: Text('Error loading messages: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(
             child: Text(
-              'ابدأ محادثة جديدة!',
+              'Start a new conversation!',
               style: TextStyle(color: AppColors.darkGrayColor, fontSize: 16),
             ),
           );
@@ -394,7 +445,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   }
   
   // =========================================================================
-  // 6. تصميم فقاعة الرسالة (Message Bubble)
+  // 6. تصميم فقاعة الرسالة (Message Bubble - WhatsApp Style)
   // =========================================================================
   
   Widget _buildMessageBubble(String messageId, Map<String, dynamic> data, bool isMe) {
@@ -402,13 +453,19 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     final replyTo = data['replyTo'] as Map<String, dynamic>?; 
     final reactions = data['reactions'] as List<dynamic>? ?? []; 
     
-    // 💡 الحصول على نوع الرسالة
+    // 💡 بما أن الرفع معطل، هذا الجزء يتم تجاهله عملياً في الـ UI
     final messageType = data['type'] as String? ?? 'text'; 
-    
-    String timeString = timestamp != null 
-        ? DateFormat('hh:mm a', 'ar').format(timestamp.toDate().toLocal()) 
-        : 'الآن';
+    final fileUrl = data['fileUrl'] as String?; 
 
+    // 💡 استخدام 'en_US' لضمان تنسيق الوقت الإنجليزي
+    String timeString = timestamp != null 
+        ? DateFormat('hh:mm a', 'en_US').format(timestamp.toDate().toLocal()) 
+        : 'Now';
+
+    // 💡 تحديد لون الخلفية والنص بناءً على المرسل
+    final bubbleColor = isMe ? AppColors.whatsappGreen : AppColors.cardBackgroundColor; 
+    final textColor = isMe ? AppColors.darkTextColor : AppColors.whiteColor;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -421,7 +478,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
               constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isMe ? AppColors.primaryColor1 : AppColors.cardBackgroundColor, 
+                color: bubbleColor,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(15),
                   topRight: const Radius.circular(15),
@@ -437,77 +494,42 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                 ],
               ),
               child: Column(
-                crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start, // Align everything to start for simplicity
                 children: [
                   if (replyTo != null)
-                    _buildReplyToIndicator(replyTo),
+                    _buildReplyToIndicator(replyTo, isMe),
                   
                   if (!isMe)
                     Text(
-                      data['senderName'] ?? 'مستخدم',
+                      data['senderName'] ?? 'User',
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.accentColor,
+                        color: AppColors.accentColor, // Gold color for name
                       ),
                     ),
                   if (!isMe) const SizedBox(height: 4),
 
-                  // 🔥 منطق عرض محتوى الرسالة (صورة أو نص)
-                  if (messageType == 'image' && data['imageUrl'] != null)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            data['imageUrl'],
-                            width: 200, 
-                            height: 200,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return SizedBox(
-                                width: 200, 
-                                height: 200,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: AppColors.accentColor,
-                                    value: loadingProgress.expectedTotalBytes != null
-                                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                        : null,
-                                  ),
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) => 
-                              const Text('فشل تحميل الصورة', style: TextStyle(color: Colors.red)),
-                          ),
-                        ),
-                        // عرض نص إضافي إذا وُجد
-                        if (data['text'] != null && data['text']!.isNotEmpty) 
-                           Padding(
-                             padding: const EdgeInsets.only(top: 8.0),
-                             child: Text(
-                               data['text']!,
-                               style: TextStyle(
-                                 color: isMe ? AppColors.whiteColor : AppColors.darkGrayColor,
-                                 fontSize: 15,
-                               ),
-                             ),
-                           ),
-                      ],
-                    )
-                  else
+                  // ⛔ وضع تعليق على محتوى الصور والفيديو (لأنه تم تعطيل الرفع)
+                  if (messageType == 'text') 
                     // عرض الرسالة النصية العادية
                     Text(
-                      data['text'] ?? 'رسالة فارغة',
+                      data['text'] ?? 'Empty message',
                       style: TextStyle(
-                        color: isMe ? AppColors.whiteColor : AppColors.darkGrayColor,
+                        color: textColor,
                         fontSize: 15,
                       ),
+                    )
+                  else 
+                    // رسالة نصية بديلة إذا كان المحتوى ليس نصياً وتم تعطيله
+                    Text(
+                      data['text'] ?? 'Media content (disabled)',
+                      style: TextStyle(
+                        color: textColor.withOpacity(0.7),
+                        fontSize: 15,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
-                  // 🔥 نهاية منطق عرض المحتوى
 
                   Padding(
                     padding: const EdgeInsets.only(top: 4.0),
@@ -523,7 +545,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                           timeString,
                           style: TextStyle(
                             fontSize: 10,
-                            color: isMe ? AppColors.whiteColor.withOpacity(0.7) : AppColors.darkGrayColor,
+                            color: isMe ? AppColors.darkTextColor.withOpacity(0.6) : AppColors.darkGrayColor.withOpacity(0.7),
                           ),
                         ),
                       ],
@@ -537,34 +559,38 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
       ),
     );
   }
-  
-  // 🟢 مؤشر الرسالة المردود عليها
-  Widget _buildReplyToIndicator(Map<String, dynamic> replyTo) {
+
+  // 🟢 مؤشر الرسالة المردود عليها (شكل محسن)
+  Widget _buildReplyToIndicator(Map<String, dynamic> replyTo, bool isMe) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), 
       margin: const EdgeInsets.only(bottom: 5),
       decoration: BoxDecoration(
-        color: AppColors.replyColor,
-        borderRadius: BorderRadius.circular(10),
+        // خلفية فاتحة للردود
+        color: isMe ? AppColors.whiteColor.withOpacity(0.7) : AppColors.replyColor.withOpacity(0.3), 
+        borderRadius: BorderRadius.circular(8),
+        // شريط جانبي بلون مميز
+        border: Border(left: BorderSide(color: AppColors.accentColor, width: 3)), 
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'رد على: ${replyTo['originalSenderName']}',
-            style: const TextStyle(
+            'Replied to: ${replyTo['originalSenderName']}',
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,
-              color: AppColors.accentColor,
+              color: isMe ? AppColors.primaryColor1 : AppColors.accentColor, // لون مختلف حسب المرسل
             ),
           ),
+          const SizedBox(height: 2),
           Text(
-            replyTo['originalText'] ?? '',
-            maxLines: 1,
+            replyTo['originalText'] ?? '.. Attached message ..',
+            maxLines: 2, 
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.whiteColor,
+              color: isMe ? AppColors.darkTextColor : AppColors.darkGrayColor, 
             ),
           ),
         ],
@@ -572,49 +598,85 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     );
   }
   
-  // 🟢 عرض التفاعلات المجمعة
-// 🟢 عرض التفاعلات المجمعة (تمت إضافتها لإظهار قائمة بأسماء المتفاعلين)
-Widget _buildReactionsDisplay(List<dynamic> reactions) {
-  final Map<String, List<String>> reactionsMap = {};
-  
-  for (var reaction in reactions) {
-    final emoji = reaction['emoji'] as String;
-    final name = reaction['name'] as String;
-    
-    // تجميع الأسماء حسب نوع التفاعل
-    if (!reactionsMap.containsKey(emoji)) {
-      reactionsMap[emoji] = [];
-    }
-    reactionsMap[emoji]!.add(name);
+  // ⛔ تم وضع تعليق على الدالة: _buildVideoPlaceholder
+  /*
+  Widget _buildVideoPlaceholder(String videoUrl, BuildContext context) {
+      return Container(
+        width: 200,
+        height: 150,
+        decoration: BoxDecoration(
+          color: AppColors.blackColor.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            const Icon(Icons.videocam_rounded, size: 50, color: AppColors.primaryColor1), // أيقونة فيديو واضحة
+            const Positioned(
+              bottom: 10,
+              child: Text(
+                'Video Sent',
+                style: TextStyle(color: AppColors.whiteColor, fontSize: 12),
+              ),
+            ),
+            Positioned.fill(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                     _showAlertDialog('Video Playback', 'Video playback is not supported in this environment, but the file is attached.');
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
   }
-  
-  return GestureDetector( // 💡 جعل المنطقة قابلة للضغط
-    onTap: () {
-      if (reactions.isNotEmpty) {
-        _showReactorsList(reactionsMap); // استدعاء الدالة الجديدة
+  */
+
+  // 🟢 عرض التفاعلات المجمعة 
+  Widget _buildReactionsDisplay(List<dynamic> reactions) {
+    final Map<String, List<String>> reactionsMap = {};
+    
+    for (var reaction in reactions) {
+      final emoji = reaction['emoji'] as String;
+      final name = reaction['name'] as String;
+      
+      if (!reactionsMap.containsKey(emoji)) {
+        reactionsMap[emoji] = [];
       }
-    },
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: reactionsMap.entries.map((entry) {
-        return Container(
-          margin: const EdgeInsets.only(left: 3),
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-          decoration: BoxDecoration(
-            color: AppColors.cardBackgroundColor,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.accentColor, width: 0.5),
-          ),
-          child: Text(
-            // عرض عدد الأشخاص في كل نوع تفاعل
-            '${entry.key} ${entry.value.length}', 
-            style: const TextStyle(fontSize: 10, color: AppColors.darkGrayColor),
-          ),
-        );
-      }).toList(),
-    ),
-  );
-}
+      reactionsMap[emoji]!.add(name);
+    }
+    
+    return GestureDetector(
+      onTap: () {
+        if (reactions.isNotEmpty) {
+          _showReactorsList(reactionsMap);
+        }
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: reactionsMap.entries.map((entry) {
+          return Container(
+            margin: const EdgeInsets.only(left: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.blackColor.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.accentColor, width: 0.5),
+            ),
+            child: Text(
+              '${entry.key} ${entry.value.length}', 
+              style: const TextStyle(fontSize: 10, color: AppColors.darkGrayColor),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   // 🟢 إظهار خيارات التفاعل عند الضغط المطول
   void _showReactionOptions(String messageId, Map<String, dynamic> data, List<dynamic> currentReactions) {
     final List<String> availableReactions = ['👍', '❤️', '😂', '🔥', '👏']; 
@@ -629,7 +691,7 @@ Widget _buildReactionsDisplay(List<dynamic> reactions) {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'التفاعل مع رسالة: ${data['senderName']}', 
+                'React to: ${data['senderName']}', 
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.whiteColor)
               ),
               const Divider(color: AppColors.darkGrayColor),
@@ -649,7 +711,7 @@ Widget _buildReactionsDisplay(List<dynamic> reactions) {
               // 🟢 خيار الرد هنا أيضاً
               ListTile(
                 leading: const Icon(Icons.reply, color: AppColors.primaryColor1),
-                title: const Text('الرد على الرسالة', style: TextStyle(color: AppColors.whiteColor)),
+                title: const Text('Reply to message', style: TextStyle(color: AppColors.whiteColor)),
                 onTap: () {
                   Navigator.pop(context);
                   _setReplyTo(data);
@@ -662,33 +724,35 @@ Widget _buildReactionsDisplay(List<dynamic> reactions) {
     );
   }
 
-  // 🟢 صندوق عرض الرسالة المردود عليها
+  // 🟢 صندوق عرض الرسالة المردود عليها (شكل محسن)
   Widget _buildReplyToBox() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.replyColor.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.accentColor, width: 1.5),
+      decoration: const BoxDecoration(
+        color: AppColors.cardBackgroundColor, 
+        // شريط جانبي بارز
+        border: Border(left: BorderSide(color: AppColors.accentColor, width: 4)), 
       ),
       child: Row(
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ترد على: ${_replyToMessage!['senderName'] ?? 'مستخدم'}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.accentColor),
-                ),
-                Text(
-                  _replyToMessage!['text'] ?? 'رسالة',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 14, color: AppColors.whiteColor),
-                ),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Replying to: ${_replyToMessage!['senderName'] ?? 'User'}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.accentColor),
+                  ),
+                  Text(
+                    _replyToMessage!['text'] ?? 'Message',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 14, color: AppColors.whiteColor),
+                  ),
+                ],
+              ),
             ),
           ),
           IconButton(
@@ -704,20 +768,6 @@ Widget _buildReactionsDisplay(List<dynamic> reactions) {
   // 7. الـ Widgets المساعدة
   // =========================================================================
 
-  void _toggleWorkoutStatus() {
-    if (!isCreator) {
-      _showAlertDialog('غير مسموح', 'فقط مؤسس الغرفة (${widget.room.creatorName}) هو من يمكنه بدء التمرين.');
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar( 
-        content: Text('تم بدء التمرين بنجاح!'), 
-        backgroundColor: AppColors.primaryColor1,
-      ),
-    );
-  }
-
   Widget _buildRoomInfoCard() {
     return Container(
       padding: const EdgeInsets.all(15),
@@ -731,26 +781,26 @@ Widget _buildReactionsDisplay(List<dynamic> reactions) {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text( 
-            'التفاصيل:',
+            'Details:',
             style: TextStyle(fontSize: 14, color: AppColors.accentColor, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           _buildDetailRow(
             Icons.fitness_center, 
-            'العضلة المستهدفة', 
+            'Target Muscle', 
             widget.room.targetMuscle,
             AppColors.accentColor,
           ),
           _buildDetailRow(
             Icons.access_time_filled, 
-            'وقت البدء', 
-            DateFormat('EEEE, hh:mm a', 'ar').format(widget.room.startTime.toDate().toLocal()),
+            'Start Time', 
+            DateFormat('EEEE, hh:mm a', 'en_US').format(widget.room.startTime.toDate().toLocal()),
             AppColors.primaryColor1,
           ),
           _buildDetailRow(
             Icons.people_alt, 
-            'المشاركون', 
-            '${widget.room.participants.length} / ${widget.room.maxCapacity} مشترك',
+            'Participants', 
+            '${widget.room.participants.length} / ${widget.room.maxCapacity} joined',
             AppColors.darkGrayColor,
           ),
         ],
@@ -791,17 +841,19 @@ Widget _buildReactionsDisplay(List<dynamic> reactions) {
       child: SafeArea( 
         child: Row(
           children: [
-            // 🔥 زر المعرض (يستدعي الدالة المعدلة)
+            // ⛔ زر إرفاق الملفات - تم وضع تعليق عليه
+            /*
             IconButton(
-              icon: const Icon(Icons.photo_library, color: AppColors.accentColor), 
-              onPressed: _pickImageFromGallery, // 💡 استدعاء الدالة الجديدة
+              icon: const Icon(Icons.attach_file, color: AppColors.accentColor), 
+              onPressed: _showMediaPickerDialog, 
             ),
+            */
             Expanded(
               child: TextField(
                 controller: _messageController,
                 style: const TextStyle(color: AppColors.whiteColor),
                 decoration: InputDecoration(
-                  hintText: 'اكتب رسالتك...',
+                  hintText: 'Type your message...',
                   hintStyle: const TextStyle(color: AppColors.darkGrayColor), 
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(25),
@@ -834,7 +886,7 @@ Widget _buildReactionsDisplay(List<dynamic> reactions) {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('إلغاء', style: TextStyle(color: AppColors.darkGrayColor)),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.darkGrayColor)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
@@ -856,77 +908,78 @@ Widget _buildReactionsDisplay(List<dynamic> reactions) {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('حسناً', style: TextStyle(color: AppColors.accentColor)),
+            child: const Text('OK', style: TextStyle(color: AppColors.accentColor)),
           )
         ],
       ),
     );
   }
+  
   // =========================================================================
-// 8. عرض قائمة المتفاعلين
-// =========================================================================
+  // 8. عرض قائمة المتفاعلين (تم إكمالها)
+  // =========================================================================
 
-void _showReactorsList(Map<String, List<String>> reactionsMap) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: AppColors.cardBackgroundColor,
-    builder: (context) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'الأشخاص الذين تفاعلوا', 
-              style: TextStyle(
-                fontSize: 18, 
-                fontWeight: FontWeight.bold, 
-                color: AppColors.whiteColor
-              )
-            ),
-            Divider(color: AppColors.darkGrayColor.withOpacity(0.5)),
-            
-            Expanded(
-              child: ListView(
-                shrinkWrap: true,
-                children: reactionsMap.entries.map((entry) {
-                  final emoji = entry.key;
-                  final names = entry.value;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$emoji (${names.length})', // عرض التفاعل وعدد المتفاعلين به
-                          style: const TextStyle(
-                            fontSize: 16, 
-                            fontWeight: FontWeight.bold, 
-                            color: AppColors.accentColor
-                          ),
-                        ),
-                        // عرض قائمة الأسماء
-                        ...names.map((name) => Padding(
-                          padding: const EdgeInsets.only(right: 15.0, top: 2),
-                          child: Text(
-                            name,
-                            style: const TextStyle(fontSize: 14, color: AppColors.darkGrayColor),
-                            textAlign: TextAlign.start,
-                          ),
-                        )).toList(),
-                        
-                      ],
-                    ),
-                  );
-                }).toList(),
+  void _showReactorsList(Map<String, List<String>> reactionsMap) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.cardBackgroundColor,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'People Who Reacted', 
+                style: TextStyle(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.bold, 
+                  color: AppColors.whiteColor
+                )
               ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+              Divider(color: AppColors.darkGrayColor.withOpacity(0.5)),
+              
+              Expanded(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: reactionsMap.entries.map((entry) {
+                    final emoji = entry.key;
+                    final names = entry.value;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$emoji (${names.length})', 
+                            style: const TextStyle(
+                              fontSize: 16, 
+                              fontWeight: FontWeight.bold, 
+                              color: AppColors.accentColor
+                            ),
+                          ),
+                          // عرض قائمة الأسماء
+                          ...names.map((name) => Padding(
+                            padding: const EdgeInsets.only(right: 15.0, top: 2),
+                            child: Text(
+                              name,
+                              style: const TextStyle(fontSize: 14, color: AppColors.darkGrayColor),
+                              textAlign: TextAlign.start,
+                            ),
+                          )).toList(),
+                          
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

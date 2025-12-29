@@ -1,10 +1,7 @@
 // ignore_for_file: avoid_print
 import 'dart:convert';
-
 import 'package:fitnessapp/firebase_options.dart';
 import 'package:fitnessapp/view/dashboard/home/notification/notification_screen.dart';
-import 'package:fitnessapp/const/complete_profile_screen.dart' hide DashboardScreen;
-import 'package:fitnessapp/view/dashboard/profile/Profile.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -15,7 +12,6 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// 🧩 شاشات وتنسيقات المشروع
 import 'package:fitnessapp/routes.dart';
 import 'package:fitnessapp/view/dashboard/home/dashboard_screen.dart';
 import 'package:fitnessapp/view/dashboard/camera/camera_screen.dart';
@@ -124,7 +120,6 @@ Future<void> _initializeOneSignal() async {
 }
 // ===========================================================================
 // 🏁 Root App
-// ... (بقية الكود)
 class MyRootApp extends StatelessWidget {
   final List<CameraDescription> cameras;
 

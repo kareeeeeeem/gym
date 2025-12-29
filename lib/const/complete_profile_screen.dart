@@ -477,12 +477,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       errorBuilder: (context, error, stackTrace) => const Icon(Icons.person_pin_circle, size: 100, color: AppColors.primaryColor1),
                   ),
                   const SizedBox(height: 15),
-                  const Text(
-                    "Membership Subscription Details", 
-                    style: TextStyle(
-                      color: AppColors.whiteColor, 
-                      fontSize: 24, 
-                      fontWeight: FontWeight.w700
+                 const Center(
+                    child:  Text(
+                      "Membership Subscription ", 
+                      style: TextStyle(
+                        color: AppColors.whiteColor, 
+                        fontSize: 24, 
+                        fontWeight: FontWeight.w700
+                      ),
                     ),
                   ),
                   const SizedBox(height: 5),

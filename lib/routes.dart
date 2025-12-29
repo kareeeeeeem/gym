@@ -4,7 +4,7 @@ import 'package:fitnessapp/view/dashboard/activity/activity_screen.dart';
 import 'package:fitnessapp/view/dashboard/home/CoachesPage/CoachesPage.dart';
 import 'package:fitnessapp/view/dashboard/home/notification/notification_screen.dart';
 import 'package:fitnessapp/aus/login/login_screen.dart';
-import 'package:fitnessapp/view/welcome/on_boarding/on_boarding_screen.dart';
+import 'package:fitnessapp/view/welcome/on_boarding/widgets/on_boarding_screen.dart';
 import 'package:fitnessapp/view/welcome/on_boarding/start_screen.dart';
 import 'package:fitnessapp/const/complete_profile_screen.dart';
 import 'package:fitnessapp/aus/signup/signup_screen.dart' hide LoginScreen;

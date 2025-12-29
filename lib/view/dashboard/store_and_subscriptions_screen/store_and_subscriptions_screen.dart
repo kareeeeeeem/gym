@@ -4,10 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart'; 
 import 'dart:async'; 
-import 'package:url_launcher/url_launcher.dart'; // 💡 يجب إضافة هذا
+import 'package:url_launcher/url_launcher.dart'; 
 
 // =========================================================================
-// 0. Widgets Definitions (RoundButton) - ADDED FOR COMPLETENESS
+// 0. Widgets Definitions (RoundButton) 
 // =========================================================================
 
 enum RoundButtonType { primaryBG, secondaryBG }
@@ -30,8 +30,10 @@ class RoundButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<Color> primaryG = [const Color(0xFF8B0000), const Color(0xFFFFA500)]; // Using AppColors placeholders
-    List<Color> secondaryG = [const Color(0xFFFFA500), const Color(0xFF8B0000)]; // Using AppColors placeholders
+    // Gradient colors: Dark Red to Amber
+    List<Color> primaryG = [const Color(0xFF8B0000), const Color(0xFFFFA500)]; 
+    // Gradient colors: Amber to Dark Red
+    List<Color> secondaryG = [const Color(0xFFFFA500), const Color(0xFF8B0000)]; 
 
     return Container(
       width: width,
@@ -69,49 +71,37 @@ class RoundButton extends StatelessWidget {
 
 
 // =========================================================================
-// 1. دالة التحقق من حالة المدير (المنطق الحقيقي)
-// =========================================================================
-// =========================================================================
-// 1. دالة التحقق من حالة المدير (النسخة النهائية المعتمدة على Firestore فقط)
+// 1. Function to Check Admin Status
 // =========================================================================
 
 Future<bool> _fetchAdminStatusFromFirestore() async {
-  // 1. جلب المستخدم الحالي
+  // 1. Get the current user
   final user = FirebaseAuth.instance.currentUser;
 
   if (user != null) {
     try {
-      // ⚠️ ملاحظة: أزلنا قائمة developerAdmins الثابتة بالكامل.
-
-      // 2. محاولة جلب وثيقة المستخدم من مجموعة 'users'
+      // 2. Attempt to fetch the user document from the 'users' collection
       final userDoc = await FirebaseFirestore.instance
           .collection('users') 
-          .doc(user.uid) // هذا هو الـ UID المسجل به حالياً
+          .doc(user.uid) 
           .get();
           
-      // 3. التحقق مما إذا كانت الوثيقة موجودة وتحتوي على حقل 'isAdmin: true'
+      // 3. Check if the document exists and contains the field 'isAdmin: true'
       if (userDoc.exists) {
-        // إذا كان الحقل isAdmin موجوداً وقيمته true، نرجع true. 
-        // إذا كان مفقوداً أو false، نرجع false (بسبب ?? false).
         final isAdminStatus = userDoc.data()?['isAdmin'] as bool? ?? false;
         return isAdminStatus; 
       }
     } catch (e) {
-      // في حالة وجود خطأ في الاتصال بقاعدة البيانات، نرجع false.
-      print("Error fetching admin status: $e");
+      debugPrint("Error fetching admin status: $e");
       return false;
     }
   }
-  // إذا لم يكن هناك مستخدم مسجل الدخول، نرجع false.
   return false; 
 }
 
-// =========================================================================
-// تذكر إزالة أي كود يتعلق بـ developerAdmins من هذه الدالة بالكامل
-// =========================================================================
 
 // =========================================================================
-// 2. تعريف الألوان والنماذج (Models & Colors)
+// 2. Colors and Models Definitions (Models & Colors)
 // =========================================================================
 
 class AppColors {
@@ -134,6 +124,7 @@ double _safeToDouble(dynamic value) {
   return 0.0;
 }
 
+// 💡 Subscription Model
 class SubscriptionModel {
   final String title;
   final String description;
@@ -157,7 +148,7 @@ class SubscriptionModel {
     final data = doc.data() as Map<String, dynamic>;
     return SubscriptionModel(
       id: doc.id,
-      title: data['title'] ?? 'بدون عنوان',
+      title: data['title'] ?? 'No Title',
       description: data['description'] ?? '',
       price: _safeToDouble(data['price']), 
       discountedPrice: _safeToDouble(data['discountedPrice']), 
@@ -178,9 +169,10 @@ class SubscriptionModel {
   }
 
   bool get hasDiscount => discountedPrice > 0 && discountedPrice < price;
-  String get discountText => hasDiscount ? "${((1 - (discountedPrice / price)) * 100).round()}% خصم" : '';
+  String get discountText => hasDiscount ? "${((1 - (discountedPrice / price)) * 100).round()}% Discount" : '';
 }
 
+// 💡 Product Model
 class ProductModel {
   final String name;
   final String description;
@@ -204,12 +196,13 @@ class ProductModel {
     final data = doc.data() as Map<String, dynamic>;
     return ProductModel(
       id: doc.id,
-      name: data['name'] ?? 'منتج غير معرف',
+      name: data['name'] ?? 'Unknown Product',
       description: data['description'] ?? '',
       price: _safeToDouble(data['price']), 
       discountedPrice: _safeToDouble(data['discountedPrice']),
-      category: data['category'] ?? 'عام',
-      imageUrl: data['imageUrl'] ?? 'assets/images/placeholder.png',
+      category: data['category'] ?? 'General',
+      // Placeholder image URL for no image
+      imageUrl: data['imageUrl'] ?? 'https://placehold.co/400x400/1D1617/FFA500?text=No+Image', 
     );
   }
   
@@ -228,17 +221,18 @@ class ProductModel {
 }
 
 // =========================================================================
-// 3. دوال Firestore (CRUD Operations)
+// 3. Firestore Functions (CRUD Operations)
 // =========================================================================
 
 final FirebaseFirestore _db = FirebaseFirestore.instance;
 
 String get _appId {
-  // 💡 يمكنك تغيير هذا ليتناسب مع هيكلية قاعدة بياناتك الحقيقية إذا لم تكن تستخدم String.fromEnvironment
+  // 💡 Use the global __app_id
   return (const String.fromEnvironment('app_id', defaultValue: 'default-app-id')); 
 }
 
 CollectionReference _getPublicDataCollection(String collectionName) {
+  // Build the path for the public data collection
   return _db.collection('artifacts')
             .doc(_appId) 
             .collection('public')
@@ -246,6 +240,7 @@ CollectionReference _getPublicDataCollection(String collectionName) {
             .collection(collectionName);
 }
 
+// Fetching subscriptions stream
 Stream<List<SubscriptionModel>> _fetchSubscriptions() {
   return _getPublicDataCollection('subscriptions')
             .snapshots()
@@ -254,6 +249,7 @@ Stream<List<SubscriptionModel>> _fetchSubscriptions() {
                 .toList());
 }
 
+// Fetching products stream
 Stream<List<ProductModel>> _fetchProducts() {
   return _getPublicDataCollection('products')
             .snapshots()
@@ -262,36 +258,74 @@ Stream<List<ProductModel>> _fetchProducts() {
                 .toList());
 }
 
+// Add a new subscription
 Future<void> addSubscription(SubscriptionModel sub) async {
   try {
     await _getPublicDataCollection('subscriptions').add(sub.toFirestore());
-  } catch (error) { print("❌ Error adding subscription: $error"); }
+  } catch (error) { debugPrint("❌ Error adding subscription: $error"); }
 }
 
+// Delete a subscription by ID
 Future<void> deleteSubscription(String id) async {
   try {
     await _getPublicDataCollection('subscriptions').doc(id).delete();
-  } catch (error) { print("❌ Error deleting subscription: $error"); }
+  } catch (error) { debugPrint("❌ Error deleting subscription: $error"); }
 }
 
+// Add a new product
 Future<void> addProduct(ProductModel product) async {
   try {
     await _getPublicDataCollection('products').add(product.toFirestore());
   } catch (error) { 
-    print("❌ Error adding product: $error"); 
-    rethrow; // 💡 إعادة رمي الخطأ لكي تلتقطه دالة _submit
+    debugPrint("❌ Error adding product: $error"); 
+    rethrow;
   }
 }
 
+// Delete a product by ID
 Future<void> deleteProduct(String id) async {
   try {
     await _getPublicDataCollection('products').doc(id).delete();
-  } catch (error) { print("❌ Error deleting product: $error"); }
+  } catch (error) { debugPrint("❌ Error deleting product: $error"); }
+}
+
+// 💡 Function to fetch the reception phone number via Firestore
+Future<String> _fetchReceptionNumber() async {
+    // Default international format number
+    const String defaultNumber = '+201004632660'; 
+
+    try {
+      // Default path for public reception settings
+      final doc = await FirebaseFirestore.instance
+          .collection('artifacts')
+          .doc((const String.fromEnvironment('app_id', defaultValue: 'default-app-id'))) 
+          .collection('public')
+          .doc('data')
+          .collection('settings') 
+          .doc('reception_info')
+          .get();
+      
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        if (data.containsKey('reception_phone') && data['reception_phone'] is String) {
+           final fetchedNumber = (data['reception_phone'] as String).trim();
+           // Ensure country code (+) is prepended if missing
+           if (!fetchedNumber.startsWith('+')) {
+              return '+20$fetchedNumber';
+           }
+           return fetchedNumber; 
+        }
+      } 
+    } catch (e) {
+      debugPrint('❌ Firebase Error fetching phone: $e');
+    }
+    // Fallback number if fetching fails
+    return defaultNumber; 
 }
 
 
 // =========================================================================
-// 4. الشاشة الرئيسية (Tabs Screen) - Stateful
+// 4. Main Screen (Tabs Screen) - Stateful
 // =========================================================================
 
 class StoreAndSubscriptionsScreen extends StatefulWidget {
@@ -324,8 +358,8 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
     }
   }
 
-  // ✅ تم التعديل: تمرير حالة المدير إلى AddProductModal
   void _showAddModal(BuildContext context, int tabIndex) {
+    // Show Add Subscription Modal
     if (tabIndex == 0) {
       showModalBottomSheet(
         context: context,
@@ -333,7 +367,9 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
         backgroundColor: Colors.transparent,
         builder: (context) => AddSubscriptionModal(isAdmin: _isAdmin), 
       );
-    } else {
+    } 
+    // Show Add Product Modal
+    else {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -354,11 +390,12 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
     
     final bool currentAdminStatus = _isAdmin; 
 
+    // Changed to LTR (English context)
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: TextDirection.ltr,
       child: DefaultTabController(
         length: 2,
-        initialIndex: 1, // ✅ تم التعديل: للبدء بشاشة المنتجات (المؤشر 1)
+        initialIndex: 1, 
 
         child: Builder(
           builder: (context) {
@@ -367,9 +404,9 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
             return Scaffold(
               backgroundColor: AppColors.blackColor,
               appBar: AppBar(
-                title: Text(
-                  currentAdminStatus ? 'Store & Subscriptions ' : 'Store & Subscriptions',
-                  style: const TextStyle(color: AppColors.accentColor, fontWeight: FontWeight.bold)
+                title: const Text(
+                  'Store & Subscriptions',
+                  style: TextStyle(color: AppColors.accentColor, fontWeight: FontWeight.bold)
                 ),
                 backgroundColor: AppColors.blackColor,
                 elevation: 0,
@@ -387,7 +424,6 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
                     child: const TabBar(
                       indicator: BoxDecoration(
                         color: AppColors.accentColor,
-                     //   borderRadius: BorderRadius.circular(25),
                       ),
                       labelColor: AppColors.blackColor,
                       unselectedLabelColor: AppColors.darkGrayColor,
@@ -406,7 +442,7 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
                   ProductsTab(isAdmin: currentAdminStatus),
                 ],
               ),
-              // زر الإضافة يظهر فقط في وضع الإدارة
+              // The add button only appears in admin mode
               floatingActionButton: currentAdminStatus 
                 ? FloatingActionButton(
                     heroTag: 'add_new_item_fab',           
@@ -436,7 +472,7 @@ class _StoreAndSubscriptionsScreenState extends State<StoreAndSubscriptionsScree
 }
 
 // =========================================================================
-// 5. مكون (Widget) عروض الاشتراكات و SubscriptionCard
+// 5. Subscription Offers Widget and SubscriptionCard
 // =========================================================================
 
 class SubscriptionsTab extends StatelessWidget {
@@ -459,16 +495,16 @@ class SubscriptionsTab extends StatelessWidget {
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: AppColors.cardBackgroundColor,
-          title: const Text("تأكيد الحذف", style: TextStyle(color: AppColors.whiteColor)),
-          content: Text("هل أنت متأكد أنك تريد حذف '$itemName'؟", style: const TextStyle(color: AppColors.darkGrayColor)),
+          title: const Text("Confirm Deletion", style: TextStyle(color: AppColors.whiteColor)),
+          content: Text("Are you sure you want to delete '$itemName'?", style: const TextStyle(color: AppColors.darkGrayColor)),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text("إلغاء", style: TextStyle(color: AppColors.accentColor)),
+              child: const Text("Cancel", style: TextStyle(color: AppColors.accentColor)),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text("حذف", style: TextStyle(color: AppColors.redColor)),
+              child: const Text("Delete", style: TextStyle(color: AppColors.redColor)),
             ),
           ],
         );
@@ -486,13 +522,13 @@ class SubscriptionsTab extends StatelessWidget {
           return const Center(child: CircularProgressIndicator(color: AppColors.accentColor));
         }
         if (snapshot.hasError) {
-          return Center(child: Text('خطأ في تحميل البيانات: ${snapshot.error}', style: const TextStyle(color: AppColors.redColor)));
+          return Center(child: Text('Error loading data: ${snapshot.error}', style: const TextStyle(color: AppColors.redColor)));
         }
         
         final subscriptions = snapshot.data ?? [];
         
         if (subscriptions.isEmpty) {
-          return const Center(child: Text('لا توجد اشتراكات متاحة حالياً.', style: TextStyle(color: AppColors.darkGrayColor)));
+          return const Center(child: Text('No subscriptions available currently.', style: TextStyle(color: AppColors.darkGrayColor)));
         }
         
         return ListView.builder(
@@ -510,7 +546,7 @@ class SubscriptionsTab extends StatelessWidget {
                 onDismissed: (direction) {
                   deleteSubscription(sub.id);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('تم حذف الاشتراك: ${sub.title}', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
+                    SnackBar(content: Text('Subscription deleted: ${sub.title}', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
                   );
                 },
                 child: SubscriptionCard(sub: sub),
@@ -575,6 +611,8 @@ class SubscriptionCard extends StatelessWidget {
               children: [
                 Text(
                   sub.title,
+                  maxLines: 2, // Added constraint to prevent overflow
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       color: AppColors.whiteColor,
                       fontSize: 18,
@@ -583,6 +621,8 @@ class SubscriptionCard extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   sub.description,
+                  maxLines: 3, // Added constraint to prevent overflow
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       color: AppColors.darkGrayColor,
                       fontSize: 12),
@@ -595,8 +635,8 @@ class SubscriptionCard extends StatelessWidget {
                   children: [
                     Text(
                       sub.hasDiscount 
-                        ? "${sub.discountedPrice.toStringAsFixed(2)} ج.م" 
-                        : "${sub.price.toStringAsFixed(2)} ج.م",
+                        ? "${sub.discountedPrice.toStringAsFixed(2)} EGP" 
+                        : "${sub.price.toStringAsFixed(2)} EGP",
                       style: TextStyle(
                           color: sub.hasDiscount ? AppColors.redColor : AppColors.accentColor,
                           fontSize: sub.hasDiscount ? 24 : 18,
@@ -605,7 +645,7 @@ class SubscriptionCard extends StatelessWidget {
                     if (sub.hasDiscount) ...[
                       const SizedBox(width: 10),
                       Text(
-                        "${sub.price.toStringAsFixed(2)} ج.م",
+                        "${sub.price.toStringAsFixed(2)} EGP",
                         style: const TextStyle(
                           color: AppColors.grayColor,
                           fontSize: 14,
@@ -641,6 +681,8 @@ class SubscriptionCard extends StatelessWidget {
                             child: Text(
                               feature,
                               style: const TextStyle(color: AppColors.whiteColor, fontSize: 13),
+                              overflow: TextOverflow.ellipsis, // Added constraint
+                              maxLines: 2, // Added constraint
                             ),
                           ),
                         ],
@@ -649,22 +691,6 @@ class SubscriptionCard extends StatelessWidget {
 
                 const SizedBox(height: 20),
                 
-                // Center(
-                //   child: ElevatedButton(
-                //     onPressed: () {
-                //       // منطق الشراء
-                //     },
-                //     style: ElevatedButton.styleFrom(
-                //       backgroundColor: AppColors.primaryColor1,
-                //       shape: RoundedRectangleBorder(
-                //         borderRadius: BorderRadius.circular(25),
-                //       ),
-                //       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                //       minimumSize: const Size(double.infinity, 50),
-                //     ),
-                //     child: const Text("اشترك الآن", style: TextStyle(color: AppColors.whiteColor, fontSize: 16, fontWeight: FontWeight.bold)),
-                //   ),
-                // ),
               ],
             ),
           ),
@@ -674,31 +700,8 @@ class SubscriptionCard extends StatelessWidget {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // =========================================================================
-// 6. مكون (Widget) متجر المنتجات و ProductCard
+// 6. Product Store Widget and ProductCard
 // =========================================================================
 
 class ProductsTab extends StatelessWidget {
@@ -720,16 +723,16 @@ class ProductsTab extends StatelessWidget {
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: AppColors.cardBackgroundColor,
-          title: const Text("تأكيد الحذف", style: TextStyle(color: AppColors.whiteColor)),
-          content: Text("هل أنت متأكد أنك تريد حذف '$itemName'؟", style: const TextStyle(color: AppColors.darkGrayColor)),
+          title: const Text("Confirm Deletion", style: TextStyle(color: AppColors.whiteColor)),
+          content: Text("Are you sure you want to delete '$itemName'?", style: const TextStyle(color: AppColors.darkGrayColor)),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text("إلغاء", style: TextStyle(color: AppColors.accentColor)),
+              child: const Text("Cancel", style: TextStyle(color: AppColors.accentColor)),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text("حذف", style: TextStyle(color: AppColors.redColor)),
+              child: const Text("Delete", style: TextStyle(color: AppColors.redColor)),
             ),
           ],
         );
@@ -747,13 +750,13 @@ class ProductsTab extends StatelessWidget {
           return const Center(child: CircularProgressIndicator(color: AppColors.accentColor));
         }
         if (snapshot.hasError) {
-          return Center(child: Text('خطأ في تحميل المنتجات: ${snapshot.error}', style: const TextStyle(color: AppColors.redColor)));
+          return Center(child: Text('Error loading products: ${snapshot.error}', style: const TextStyle(color: AppColors.redColor)));
         }
 
         final products = snapshot.data ?? [];
         
         if (products.isEmpty) {
-          return const Center(child: Text('لا توجد منتجات متاحة حالياً.', style: TextStyle(color: AppColors.darkGrayColor)));
+          return const Center(child: Text('No products available currently.', style: TextStyle(color: AppColors.darkGrayColor)));
         }
         
         return GridView.builder(
@@ -779,7 +782,7 @@ class ProductsTab extends StatelessWidget {
                 onDismissed: (direction) {
                   deleteProduct(product.id);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('تم حذف المنتج: ${product.name}', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
+                    SnackBar(content: Text('Product deleted: ${product.name}', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
                   );
                 },
                 child: productWidget,
@@ -794,98 +797,61 @@ class ProductsTab extends StatelessWidget {
   }
 }
 
-
-
-
 class ProductCard extends StatelessWidget {
   final ProductModel product;
   const ProductCard({Key? key, required this.product}) : super(key: key);
 
 
-  // 💡 تم التعديل: زيادة تفاصيل الخطأ وإضافة تأخير بسيط لضمان تهيئة Firebase
-  Future<String> _fetchReceptionNumber() async {
-    const String defaultNumber = '201004632660'; 
-
-    // ✅ نقطة التحقق الإضافية: التأكد من أن Firebase قد تم تهيئته (عادة ما يكون قد تم ذلك قبل عرض الشاشة، لكن للتأكد)
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('default_number')
-          .doc('general')
-          .get();
-      
-      if (doc.exists && doc.data() != null) {
-        final data = doc.data()!;
-        if (data.containsKey('reception_phone') && data['reception_phone'] is String) {
-           final fetchedNumber = (data['reception_phone'] as String).trim();
-           debugPrint('✅ Firebase fetched number successfully: $fetchedNumber');
-           return fetchedNumber; 
-        } else {
-           debugPrint('⚠️ Firestore document exists but field reception_phone is missing or not a String.');
-           return defaultNumber;
-        }
-      } else {
-        debugPrint('⚠️ Firestore document default_number/general does not exist.');
-        return defaultNumber; 
-      }
-    } catch (e) {
-      // إذا حدث خطأ في الاتصال، نرجع رقماً احتياطياً
-      debugPrint('❌ Firebase Error fetching phone: $e');
-      return defaultNumber; 
-    }
-  }
-  
-
-  // منطق حجز المنتج وفتح الواتساب (تم التعديل لاستخدام Firebase)
+  // Booking logic and opening WhatsApp (modified to use Firebase fetched number)
   void _handleBooking(BuildContext context) async {
     
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Book With Reception Chat'),
+        content: Text('Preparing booking chat now...'),
         backgroundColor: AppColors.accentColor,
       ),
     );
 
-    // 💡 الخطوة 1: جلب الرقم ديناميكياً من Firebase
+    // 💡 Step 1: Fetch the number dynamically from Firebase
     final String receptionNumber = await _fetchReceptionNumber();
 
-    // 1. بناء رسالة الواتساب
+    // 1. Build the WhatsApp message
      String message = 
-    "Hello, I would like to book the following product:\n\n*Product:* ${product.name}\n\n*Price:* ${product.price.toStringAsFixed(2)} EG";    
+    "Hello, I would like to book the following product:\n\n*Product:* ${product.name}\n\n*Price:* ${product.price.toStringAsFixed(2)} EGP";    
     
-    // إضافة السعر المخصوم إذا كان موجوداً
+    // Add discounted price if available
     if (product.hasDiscount) {
-      message +="\n*Discounted Price:* ${product.discountedPrice.toStringAsFixed(2)} EG";
+      message +="\n*Discounted Price:* ${product.discountedPrice.toStringAsFixed(2)} EGP";
     }
     
-    // 2. تشفير الرسالة لكي تكون صالحة في الرابط
+    // 2. Encode the message for the URL
     final encodedMessage = Uri.encodeComponent(message);
     
-    // 3. بناء رابط واتساب باستخدام الرقم الذي تم جلبه من Firebase
-    // 🚨 ملاحظة: يجب أن يحتوي الرقم على كود الدولة (مثل +20 أو 20)
+    // 3. Build the WhatsApp link using the fetched number
+    // 🚨 Note: The number is fetched with the country code (+20) from _fetchReceptionNumber
     final Uri whatsappUrl = Uri.parse(
         'whatsapp://send?phone=$receptionNumber&text=$encodedMessage'); 
 
-    // 4. محاولة فتح الرابط
+    // 4. Attempt to open the link
     try {
       if (await canLaunchUrl(whatsappUrl)) {
         await launchUrl(whatsappUrl);
       } else {
-        // إذا كان تطبيق واتساب غير متوفر، نحاول الفتح عبر المتصفح 
+        // If WhatsApp app is not available, try opening via browser
         final Uri webUrl = Uri.parse(
-            'https://wa.me/$receptionNumber?text=$encodedMessage'); 
+            'https://wa.me/${receptionNumber.replaceAll('+', '')}?text=$encodedMessage'); 
         await launchUrl(webUrl, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      // إظهار رسالة خطأ واضحة
+      // Show clear error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-content: Text('Failed to open WhatsApp. Make sure it is installed and the number is: $receptionNumber'),          backgroundColor: AppColors.redColor,
+          content: Text('Failed to open WhatsApp. Ensure it is installed and the number is: $receptionNumber'),
+          backgroundColor: AppColors.redColor,
         ),
       );
     }
   }
-
-
 
 
   @override
@@ -904,13 +870,12 @@ content: Text('Failed to open WhatsApp. Make sure it is installed and the number
       ),
       child: InkWell(
         onTap: () {
-          // منطق فتح التفاصيل
+          // Logic for opening details (can add a modal for detailed description later)
         },
         borderRadius: BorderRadius.circular(15),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ... (باقي كود الصورة والتفاصيل العليا) ...
             Stack(
               children: [
                 ClipRRect(
@@ -949,14 +914,13 @@ content: Text('Failed to open WhatsApp. Make sure it is installed and the number
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
-                        "offer",
+                        "Offer",
                         style: TextStyle(color: AppColors.blackColor, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
               ],
             ),
-            // ... (نهاية كود الصورة والتفاصيل العليا) ...
 
             Padding(
               padding: const EdgeInsets.all(10),
@@ -965,7 +929,7 @@ content: Text('Failed to open WhatsApp. Make sure it is installed and the number
                 children: [
                   Text(
                     product.name,
-                    maxLines: 4, 
+                    maxLines: 2, // Reduced maxLines for better fit in card, used 2 instead of 4
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         color: AppColors.whiteColor,
@@ -982,7 +946,7 @@ content: Text('Failed to open WhatsApp. Make sure it is installed and the number
                   ),
                   const SizedBox(height: 8),
                   
-                  // الزر المُعدَّل لفتح الواتساب
+                  // The modified button to open WhatsApp
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -991,7 +955,7 @@ content: Text('Failed to open WhatsApp. Make sure it is installed and the number
                         children: [
                           if (product.hasDiscount)
                             Text(
-                              "${product.price.toStringAsFixed(2)} ج.م",
+                              "${product.price.toStringAsFixed(2)} EGP",
                               style: const TextStyle(
                                 color: AppColors.grayColor,
                                 fontSize: 10,
@@ -1000,8 +964,8 @@ content: Text('Failed to open WhatsApp. Make sure it is installed and the number
                             ),
                           Text(
                             product.hasDiscount 
-                              ? "${product.discountedPrice.toStringAsFixed(2)} ج.م" 
-                              : "${product.price.toStringAsFixed(2)} ج.م",
+                              ? "${product.discountedPrice.toStringAsFixed(2)} EGP" 
+                              : "${product.price.toStringAsFixed(2)} EGP",
                             style: TextStyle(
                               color: product.hasDiscount ? AppColors.accentColor : AppColors.accentColor,
                               fontSize: 14,
@@ -1010,12 +974,12 @@ content: Text('Failed to open WhatsApp. Make sure it is installed and the number
                           ),
                         ],
                       ),
-                      
+                      SizedBox(width: 10,),
                       Expanded(
                         child: Container(
                           margin: const EdgeInsets.only(right: 5),
                           child: ElevatedButton.icon(
-                            onPressed: () => _handleBooking(context), // استدعاء دالة فتح الواتساب
+                            onPressed: () => _handleBooking(context), // Call WhatsApp function
 
                         icon: const Icon(
                           FontAwesomeIcons.whatsapp, 
@@ -1023,7 +987,7 @@ content: Text('Failed to open WhatsApp. Make sure it is installed and the number
                           size: 16
                         ),
                         label: const Text(
-                          "book",
+                          "Book",
                           style: TextStyle(color: AppColors.whiteColor, fontSize: 12, fontWeight: FontWeight.bold),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1048,16 +1012,8 @@ content: Text('Failed to open WhatsApp. Make sure it is installed and the number
   }
 }
 
-
-
-
-
-
-
-
-
 // =========================================================================
-// 7. واجهة إضافة اشتراك (Modal) - تم إضافة isAdmin
+// 7. Add Subscription Interface (Modal) - isAdmin added
 // =========================================================================
 
 class AddSubscriptionModal extends StatefulWidget {
@@ -1078,7 +1034,6 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
   final _featuresController = TextEditingController(); 
 
   Widget _buildTextField(TextEditingController controller, String label, {bool isRequired = false, bool isNumber = false, int maxLines = 1, String? helpText}) {
-    // ... (بناء حقل النص هنا كما في _AddProductModalState)
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: TextFormField(
@@ -1101,11 +1056,11 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
         inputFormatters: isNumber ? [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))] : null,
         validator: (value) {
           if (isRequired && (value == null || value.isEmpty)) {
-            return 'هذا الحقل مطلوب';
+            return 'This field is required';
           }
           if (isNumber && value != null && value.isNotEmpty) {
             if (double.tryParse(value) == null) {
-              return 'أدخل رقماً صحيحاً';
+              return 'Enter a valid number';
             }
           }
           return null;
@@ -1124,7 +1079,7 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
       
       if (discountedPrice > price && discountedPrice > 0) {
           ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('❌ سعر الخصم لا يمكن أن يكون أكبر من السعر الأصلي.'), backgroundColor: AppColors.redColor),
+              const SnackBar(content: Text('❌ Discount price cannot be greater than the base price.'), backgroundColor: AppColors.redColor),
           );
           return;
       }
@@ -1149,7 +1104,7 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
         if(mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('تم إضافة ${newSub.title} بنجاح!', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
+            SnackBar(content: Text('${newSub.title} added successfully!', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
           );
         }
       });
@@ -1179,7 +1134,7 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
             children: <Widget>[
               const Center(
                 child: Text(
-                  'إضافة اشتراك جديد',
+                  'Add New Subscription',
                   style: TextStyle(
                     color: AppColors.accentColor,
                     fontSize: 20,
@@ -1188,15 +1143,15 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
                 ),
               ),
               const Divider(color: AppColors.darkGrayColor),
-              _buildTextField(_titleController, 'عنوان الاشتراك', isRequired: true),
-              _buildTextField(_descController, 'الوصف الموجز', maxLines: 2),
-              _buildTextField(_priceController, 'السعر الأساسي (ج.م)', isRequired: true, isNumber: true),
-              _buildTextField(_discountController, 'السعر بعد الخصم (ج.م) (اختياري)', isNumber: true),
-              _buildTextField(_durationController, 'مدة الاشتراك (مثال: شهر، 3 أشهر)', isRequired: true),
-              _buildTextField(_featuresController, 'الميزات (افصلها بفاصلة)', maxLines: 3, helpText: 'مثال: دخول مجاني، متابعة شخصية، خطة غذائية'),
+              _buildTextField(_titleController, 'Subscription Title', isRequired: true),
+              _buildTextField(_descController, 'Short Description', maxLines: 2),
+              _buildTextField(_priceController, 'Base Price (EGP)', isRequired: true, isNumber: true),
+              _buildTextField(_discountController, 'Discounted Price (EGP) (Optional)', isNumber: true),
+              _buildTextField(_durationController, 'Subscription Duration (e.g., Month, 3 Months)', isRequired: true),
+              _buildTextField(_featuresController, 'Features (Separate by comma)', maxLines: 3, helpText: 'e.g., Free entry, Personal follow-up, Diet plan'),
               const SizedBox(height: 20),
               
-              // 💡 زر الإضافة يظهر للمدير فقط
+              // 💡 Add button only appears for admins
               if (widget.isAdmin)
                 ElevatedButton(
                   onPressed: _submit,
@@ -1205,7 +1160,7 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                     padding: const EdgeInsets.symmetric(vertical: 15),
                   ),
-                  child: const Text('إضافة الاشتراك', style: TextStyle(color: AppColors.whiteColor, fontSize: 16)),
+                  child: const Text('Add Subscription', style: TextStyle(color: AppColors.whiteColor, fontSize: 16)),
                 ),
             ],
           ),
@@ -1215,29 +1170,11 @@ class _AddSubscriptionModalState extends State<AddSubscriptionModal> {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // =========================================================================
-// 8. واجهة إضافة منتج (Modal) - تم إضافة isAdmin
+// 8. Add Product Interface (Modal) - isAdmin added
 // =========================================================================
 
 class AddProductModal extends StatefulWidget {
-  // ✅ تم التعديل: إضافة isAdmin
   final bool isAdmin; 
   const AddProductModal({Key? key, this.isAdmin = false}) : super(key: key);
 
@@ -1280,11 +1217,11 @@ class _AddProductModalState extends State<AddProductModal> {
         inputFormatters: isNumber ? [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))] : null,
         validator: (value) {
           if (isRequired && (value == null || value.isEmpty)) {
-            return 'هذا الحقل مطلوب';
+            return 'This field is required';
           }
           if (isNumber && value != null && value.isNotEmpty) {
             if (double.tryParse(value) == null) {
-              return 'أدخل رقماً صحيحاً';
+              return 'Enter a valid number';
             }
           }
           return null;
@@ -1293,22 +1230,20 @@ class _AddProductModalState extends State<AddProductModal> {
     );
   }
 
-void _submit() async { // 💡 اجعل الدالة asynchronous
+void _submit() async { 
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      // ... منطق التحقق من الخصم ...
       
       final price = double.tryParse(_priceController.text) ?? 0.0;
       final discountedPrice = double.tryParse(_discountController.text) ?? 0.0;
       
-      // ... (التحقق من الخصم) ...
       if (discountedPrice > price && discountedPrice > 0) {
           ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('❌ سعر الخصم لا يمكن أن يكون أكبر من السعر الأصلي.'), backgroundColor: AppColors.redColor),
+              const SnackBar(content: Text('❌ Discount price cannot be greater than the base price.'), backgroundColor: AppColors.redColor),
           );
           return;
       }
-      // ... (بناء newProduct) ...
+      
       final newProduct = ProductModel(
         id: '', 
         name: _nameController.text,
@@ -1320,18 +1255,18 @@ void _submit() async { // 💡 اجعل الدالة asynchronous
       );
 
       try {
-        await addProduct(newProduct); // 💡 استخدم await مباشرة
+        await addProduct(newProduct); 
 
         if(mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('تم إضافة ${newProduct.name} بنجاح!', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
+            SnackBar(content: Text('${newProduct.name} added successfully!', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.primaryColor1),
           );
         }
       } catch (e) {
-        // 💡 رسالة خطأ واضحة للمستخدم
+        // Clear error message for the user
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل الإضافة: ${e.toString()}', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.redColor),
+          SnackBar(content: Text('Addition failed: ${e.toString()}', style: const TextStyle(color: AppColors.whiteColor)), backgroundColor: AppColors.redColor),
         );
       }
     }
@@ -1358,7 +1293,7 @@ void _submit() async { // 💡 اجعل الدالة asynchronous
             children: <Widget>[
               const Center(
                 child: Text(
-                  'إضافة منتج جديد',
+                  'Add New Product',
                   style: TextStyle(
                     color: AppColors.accentColor,
                     fontSize: 20,
@@ -1367,15 +1302,15 @@ void _submit() async { // 💡 اجعل الدالة asynchronous
                 ),
               ),
               const Divider(color: AppColors.darkGrayColor),
-              _buildTextField(_nameController, 'اسم المنتج', isRequired: true),
-              _buildTextField(_descController, 'الوصف التفصيلي', maxLines: 3),
-              _buildTextField(_priceController, 'السعر الأساسي (ج.م)', isRequired: true, isNumber: true),
-              _buildTextField(_discountController, 'السعر بعد الخصم (ج.م) (اختياري)', isNumber: true),
-              _buildTextField(_categoryController, 'التصنيف (مثال: بروتين، مكملات، ملابس)', isRequired: true),
-              _buildTextField(_imageUrlController, 'رابط صورة المنتج (URL)', isRequired: true),
+              _buildTextField(_nameController, 'Product Name', isRequired: true),
+              _buildTextField(_descController, 'Detailed Description', maxLines: 3),
+              _buildTextField(_priceController, 'Base Price (EGP)', isRequired: true, isNumber: true),
+              _buildTextField(_discountController, 'Discounted Price (EGP) (Optional)', isNumber: true),
+              _buildTextField(_categoryController, 'Category (e.g., Protein, Supplements, Apparel)', isRequired: true),
+              _buildTextField(_imageUrlController, 'Product Image Link (URL)', isRequired: true),
               const SizedBox(height: 20),
               
-              // ✅ تم التعديل: زر الإضافة يظهر للمدير فقط
+              // Add button only appears for admins
               if (widget.isAdmin) 
                 ElevatedButton(
                   onPressed: _submit,
@@ -1384,7 +1319,7 @@ void _submit() async { // 💡 اجعل الدالة asynchronous
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                     padding: const EdgeInsets.symmetric(vertical: 15),
                   ),
-                  child: const Text('إضافة المنتج', style: TextStyle(color: AppColors.whiteColor, fontSize: 16)),
+                  child: const Text('Add Product', style: TextStyle(color: AppColors.whiteColor, fontSize: 16)),
                 ),
             ],
           ),

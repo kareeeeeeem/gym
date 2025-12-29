@@ -90,6 +90,17 @@ dependencies:
 
   gh_pages: ^0.1.1
 
+  liquid_swipe: ^3.1.0 
+
+  lottie: ^3.3.2
+
+
+
+
+
+
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -111,6 +122,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/lottie/
   fonts:
     - family: Poppins
       fonts:

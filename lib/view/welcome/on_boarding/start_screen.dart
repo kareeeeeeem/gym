@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fitnessapp/const/utils/app_colors.dart';
-import 'package:fitnessapp/view/welcome/on_boarding/on_boarding_screen.dart';
+import 'package:fitnessapp/view/welcome/on_boarding/widgets/on_boarding_screen.dart';
 
 class StartScreen extends StatefulWidget {
   static String routeName = "/StartScreen";

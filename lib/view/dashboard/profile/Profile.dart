@@ -1015,7 +1015,7 @@ void _fetchUserData() async {
     return Scaffold(
       backgroundColor: AppColors.blackColor,
       appBar: AppBar(
-        title: const Text("My Profile", style: TextStyle(color: AppColors.whiteColor, fontWeight: FontWeight.bold)),
+        title: const Center(child:  Text("My Profile", style: TextStyle(color: AppColors.whiteColor, fontWeight: FontWeight.bold))),
         backgroundColor: AppColors.blackColor,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.whiteColor),
